@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 
 from signals import calculate_expense_responsibility
+
+OPERATIONAL_BASE = 'SBJD'
 
 EXPENSE_TYPES = {1: u'Direta por operação',
                  2: u'Variável operacional',
@@ -18,6 +21,11 @@ OUTAGE_TYPES = (u'Mau uso',
                 )
 
 OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
+
+"""
+def validate(sender, **kwargs):
+    kwargs['instance'].validate()
+"""
 
 class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
@@ -40,7 +48,7 @@ class Flight(models.Model):
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
 
     def __unicode__(self):
-        return ' '.join((self.date, self.origin, self.destiny))
+        return '%s %s %s %d' % (self.date.strftime('%d/%m/%Y'), self.origin, self.destiny, self.start_hobbs)
 
     class Meta:
         verbose_name = u"Vôo"
@@ -50,6 +58,10 @@ class PAX(models.Model):
     owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
     ammount = models.IntegerField()
 
+    def propagate_changes(self):
+        for expense in self.flight.directexpense_set.all():
+            expense.save()
+
     def __unicode__(self):
         return '%s %.2f' % (self.owner.name, self.ammount)
     
@@ -57,6 +69,12 @@ class PAX(models.Model):
         verbose_name = u"PAX"
         verbose_name_plural = u"PAX"
     
+def propagate_pax_changes(sender, **kwargs):
+    kwargs['instance'].propagate_changes()
+    
+models.signals.post_save.connect(propagate_pax_changes, sender=PAX)
+
+
 class ExpenseCategory(models.Model):
     name = models.CharField(u"Nome", max_length=32)
     expense_type = models.IntegerField(u"Tipo de despesa", choices=EXPENSE_TYPES.items())
@@ -74,6 +92,18 @@ class Expense(models.Model):
     date = models.DateField(u"Data", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, blank=True, null=True)
 
+    def share(self, responsibility=[]):
+        for resp in self.responsibility_set.all():
+            resp.delete()
+
+        if not responsibility:
+            owners = Person.objects.filter(owner=True)
+            for owner in owners:
+                responsibility.append((owner, self.ammount/len(owners)))
+
+        for resp in responsibility:
+            self.responsibility_set.create(owner=resp[0], ammount=resp[1])
+            
     def __unicode__(self):
         return '%s %.2f' % (self.date, self.ammount)
 
@@ -83,8 +113,6 @@ class Expense(models.Model):
     class Meta:
         verbose_name = u"Despesa"
         ordering = ['-date']
-
-models.signals.post_save.connect(calculate_expense_responsibility, sender=Expense)
 
 class Payment(models.Model):
     expense = models.ForeignKey(Expense)
@@ -107,14 +135,59 @@ class Responsibility(models.Model):
     
     class Meta:
         verbose_name = u"Responsabilidade"
+        ordering = [u"owner__name"]
+
+#signal
+def share_responsibility(sender, **kwargs):
+    kwargs['instance'].share()
 
 class DirectExpense(Expense):
     flight = models.ForeignKey(Flight) 
     description = models.CharField(u"Descrição", max_length=255)
 
+    def get_pax_flight(self):
+        if self.flight.pax_set.count() > 1:
+            return self.flight
+
+        flight = self.flight
+
+        while flight.mantainance \
+              or (flight.pax_set.count() == 0 and \
+                  flight.origin != OPERATIONAL_BASE):
+            try:
+                flight = Flight.objects.filter(start_hobbs__lt = flight.start_hobbs).order_by('-start_hobbs')[0]
+            except IndexError:
+                raise ValidationError("Não há nenhum PAX")
+
+        if flight.pax_set.count() == 0:
+            raise ValidationError("Não há nenhum PAX")
+
+        return flight
+
+        
+        
+    def share(self):
+        if self.flight.mantainance:
+            # Share equally
+            return super(DirectExpense, self).share(responsibility=[])
+
+        responsibility = []
+
+        flight = self.get_pax_flight()
+
+        total = flight.pax_set.aggregate(models.Sum('ammount'))['ammount__sum']
+        for pax in flight.pax_set.all():
+            responsibility.append((pax.owner, self.ammount*float(pax.ammount)/total))
+                
+
+        return super(DirectExpense, self).share(responsibility)
+            
+
     class Meta:
         verbose_name = u"Despesa direta por operação"
         verbose_name_plural = u"Despesas diretas por operação"
+
+models.signals.post_save.connect(share_responsibility, sender=DirectExpense)
 
 class VariableExpense(Expense):
     start = models.DateField(u"De")
