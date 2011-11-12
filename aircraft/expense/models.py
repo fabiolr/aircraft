@@ -21,6 +21,9 @@ class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
     system_user = models.ForeignKey(User, verbose_name=u"usuário")
     owner = models.BooleanField(u"É proprietário do avião?", default=False)
+
+    class Meta:
+        verbose_name = u"Pessoa"
     
 class Flight(models.Model):
     date = models.DateField(u"Data", blank=False, null=False)
@@ -34,7 +37,7 @@ class Flight(models.Model):
     class Meta:
         verbose_name = u"Vôo"
 
-class FlightResponsibility(models.Model):
+class PAX(models.Model):
     flight = models.ForeignKey(Flight)
     owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
     ammount = models.IntegerField()
@@ -42,7 +45,6 @@ class FlightResponsibility(models.Model):
     class Meta:
         verbose_name = u"PAX"
         verbose_name_plural = u"PAX"
-        
     
 class ExpenseCategory(models.Model):
     name = models.CharField(u"Nome", max_length=32)
@@ -67,13 +69,13 @@ class Expense(models.Model):
 
 class Payment(models.Model):
     expense = models.ForeignKey(Expense)
-    user = models.ForeignKey(Person)
+    person = models.ForeignKey(Person)
     ammount = models.FloatField()
 
     class Meta:
         verbose_name = u"Pagamento"
 
-class ExpenseResponsibility(models.Model):
+class Responsibility(models.Model):
     expense = models.ForeignKey(Expense)
     owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
     ammount = models.FloatField()
@@ -111,36 +113,44 @@ class FixedExpense(Expense):
         verbose_name_plural = u"Despesas fixas operacionais"
 
 
-class HourlyMantainance(models.Model):
-    date = models.DateField(u"Data de chegada na oficina")
+class HourlyMantainance(Expense):
+    mantainance_date = models.DateField(u"Data de chegada na oficina")
     hobbs = models.FloatField(u"Hobbs de chegada na oficina")
     hours = models.IntegerField(u"Nº de horas da inspeção")
-    expense = models.ForeignKey(Expense)
     obs = models.CharField(u"Observações", max_length=255)
 
-class ScheduleMantainance(models.Model):
-    date = models.DateField(u"Data de chegada na oficina")
-    period = models.IntegerField(u"Período vencido em dias")
-    expense = models.ForeignKey(Expense)
+    class Meta:
+        verbose_name = u"Manutenção por hora"
+        verbose_name_plural = u"Manutenções por hora"
+        
 
-class Outage(models.Model):
-    flight = models.ForeignKey(Flight, blank=True)
-    category = models.CharField(u"Tipo", max_length=16, choices=OUTAGE_CHOICES)
-    date = models.DateField(u"Data de percepção da pane")
-    cause = models.CharField(u"Causa provável", max_length=255)
+class ScheduleMantainance(Expense):
+    entrance_date = models.DateField(u"Data de chegada na oficina")
+    period = models.IntegerField(u"Período vencido em dias")
 
     class Meta:
-        verbose_name = u"Pane"
+        verbose_name = u"Manutenção calendárica"
+        verbose_name_plural = u"Manutenções calendáricas"
+    
 
-class EventualMantainance(models.Model):
-    outage = models.ForeignKey(Outage)
-    expense = models.ForeignKey(Expense)
+class EventualMantainance(Expense):
+    flight = models.ForeignKey(Flight, blank=True)
+    outage_type = models.CharField(u"Tipo", max_length=16, choices=OUTAGE_CHOICES)
+    discovery_date = models.DateField(u"Data de percepção da pane")
+    cause = models.CharField(u"Causa provável", max_length=255)
+    responsible = models.ForeignKey(Person, limit_choices_to={'owner': True},
+                                    verbose_name = "Responsável")
 
-class Payments(models.Model):
+    class Meta:
+        verbose_name = u"Manutenção eventual"
+        verbose_name_plural = u"Manuenções eventuais (Panes)"
+
+class Payment(models.Model):
     date = models.DateField(u"Data")
     by = models.ForeignKey(Person, limit_choices_to={'owner': True},
                            verbose_name=u"De", related_name='payments_made')
     to = models.ForeignKey(Person, limit_choices_to={'owner': True},
                            verbose_name=u"Para", related_name='payments_received')
     ammount = models.FloatField(u"Valor", blank=False, null=False)
+
 
