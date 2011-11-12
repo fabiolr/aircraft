@@ -1,8 +1,10 @@
 from django.contrib import admin
-from forms import DirectExpenseForm
+from forms import DirectExpenseForm, VariableExpenseForm, FixedExpenseForm
 
 from aircraft.expense.models import (Flight, Expense, ExpenseCategory, DirectExpense, VariableExpense, 
                                      FixedExpense, ExpenseResponsibility, Payment, FlightResponsibility)
+
+# Flight
 
 class FlightResponsibilityInline(admin.TabularInline):
     model = FlightResponsibility
@@ -12,6 +14,8 @@ class FlightAdmin(admin.ModelAdmin):
         FlightResponsibilityInline,
         ]
 
+
+# Expenses
 
 class PaymentInline(admin.TabularInline):
     model = Payment
@@ -32,12 +36,17 @@ class DirectExpenseAdmin(admin.ModelAdmin):
         PaymentInline,
         ]
 
-
 class VariableExpenseAdmin(admin.ModelAdmin):
-    pass
+    form = VariableExpenseForm
+    inlines = [
+        PaymentInline,
+        ]
 
 class FixedExpenseAdmin(admin.ModelAdmin):
-    pass
+    form = FixedExpenseForm
+    inlines = [
+        PaymentInline,
+        ]
 
 admin.site.register(Flight, FlightAdmin)
 admin.site.register(ExpenseCategory, ExpenseCategoryAdmin)
