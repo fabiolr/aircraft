@@ -284,7 +284,7 @@ class Migration(SchemaMigration):
             'system_user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
         },
         'expense.responsibility': {
-            'Meta': {'object_name': 'Responsibility'},
+            'Meta': {'ordering': "[u'owner__name']", 'object_name': 'Responsibility'},
             'ammount': ('django.db.models.fields.FloatField', [], {}),
             'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Expense']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),

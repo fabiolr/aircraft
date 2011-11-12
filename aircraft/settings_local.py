@@ -25,7 +25,7 @@ if 'test' in sys.argv:
 
 NOSE_ARGS = [
 #              '--stop',
-              '--nocapture',
+             '--nocapture',
 #              '-a tags=dev',
               '--with-id',
 #              '--failed',

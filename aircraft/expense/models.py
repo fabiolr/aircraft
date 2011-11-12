@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import collections
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -47,6 +48,41 @@ class Flight(models.Model):
     cycles = models.IntegerField(u"Ciclos", blank=False, null=False)
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
 
+    @property
+    def hobbs(self):
+        return self.end_hobbs - self.start_hobbs
+
+    @property
+    def responsibility(self):
+        responsibility = collections.Counter()
+
+        pax_set = self.find_pax_set()
+        
+        total = pax_set.aggregate(models.Sum('ammount'))['ammount__sum']
+        for pax in pax_set.all():
+            responsibility[pax.owner.id] = float(pax.ammount) / total
+
+        return responsibility
+
+    def find_pax_set(self):
+        if self.pax_set.count() > 1:
+            return self.pax_set
+
+        flight = self
+
+        while flight.mantainance \
+              or (flight.pax_set.count() == 0 and \
+                  flight.origin != OPERATIONAL_BASE):
+            try:
+                flight = Flight.objects.filter(start_hobbs__lt = flight.start_hobbs).order_by('-start_hobbs')[0]
+            except IndexError:
+                raise ValidationError("Não há nenhum PAX")
+
+        if flight.pax_set.count() == 0:
+            raise ValidationError("Não há nenhum PAX")
+
+        return flight.pax_set
+
     def __unicode__(self):
         return '%s %s %s %d' % (self.date.strftime('%d/%m/%Y'), self.origin, self.destiny, self.start_hobbs)
 
@@ -92,17 +128,19 @@ class Expense(models.Model):
     date = models.DateField(u"Data", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, blank=True, null=True)
 
-    def share(self, responsibility=[]):
+    def share(self, responsibility={}):
         for resp in self.responsibility_set.all():
             resp.delete()
 
         if not responsibility:
             owners = Person.objects.filter(owner=True)
             for owner in owners:
-                responsibility.append((owner, self.ammount/len(owners)))
+                responsibility[owner.id] = self.ammount/len(owners)
 
-        for resp in responsibility:
-            self.responsibility_set.create(owner=resp[0], ammount=resp[1])
+        for owner, resp in responsibility.items():
+            self.responsibility_set.create(ammount=resp * self.ammount,
+                                           owner=Person.objects.get(id=owner))
+                                           
             
     def __unicode__(self):
         return '%s %.2f' % (self.date, self.ammount)
@@ -139,48 +177,15 @@ class Responsibility(models.Model):
 
 #signal
 def share_responsibility(sender, **kwargs):
-    kwargs['instance'].share()
+    if kwargs['instance'].ammount:
+        kwargs['instance'].share()
 
 class DirectExpense(Expense):
     flight = models.ForeignKey(Flight) 
     description = models.CharField(u"Descrição", max_length=255)
 
-    def get_pax_flight(self):
-        if self.flight.pax_set.count() > 1:
-            return self.flight
-
-        flight = self.flight
-
-        while flight.mantainance \
-              or (flight.pax_set.count() == 0 and \
-                  flight.origin != OPERATIONAL_BASE):
-            try:
-                flight = Flight.objects.filter(start_hobbs__lt = flight.start_hobbs).order_by('-start_hobbs')[0]
-            except IndexError:
-                raise ValidationError("Não há nenhum PAX")
-
-        if flight.pax_set.count() == 0:
-            raise ValidationError("Não há nenhum PAX")
-
-        return flight
-
-        
-        
     def share(self):
-        if self.flight.mantainance:
-            # Share equally
-            return super(DirectExpense, self).share(responsibility=[])
-
-        responsibility = []
-
-        flight = self.get_pax_flight()
-
-        total = flight.pax_set.aggregate(models.Sum('ammount'))['ammount__sum']
-        for pax in flight.pax_set.all():
-            responsibility.append((pax.owner, self.ammount*float(pax.ammount)/total))
-                
-
-        return super(DirectExpense, self).share(responsibility)
+        return super(DirectExpense, self).share(self.flight.responsibility)
             
 
     class Meta:
@@ -192,11 +197,34 @@ models.signals.post_save.connect(share_responsibility, sender=DirectExpense)
 class VariableExpense(Expense):
     start = models.DateField(u"De")
     end = models.DateField(u"Até")
+
+    def share(self):
+        total = 0.0
+        resp = collections.Counter()
+        owners = Person.objects.filter(owner=True)
+
+        for flight in Flight.objects.filter(date__gte=self.start, date__lte=self.end):
+            total += flight.hobbs
+            if flight.mantainance:
+                for owner in owners.all():
+                    resp[owner.id] += flight.hobbs/owners.count()
+            else:
+                for owner, hobbs in flight.responsibility.items():
+                    resp[owner] += hobbs * flight.hobbs
+
+        for key in resp.keys():
+            resp[key] /= total
+
+        return super(VariableExpense, self).share(resp)
+
+    def __unicode__(self):
+        return self.ammount
     
     class Meta:
         verbose_name = u"Despesa variável operacional"
         verbose_name_plural = u"Despesas variáveis operacionais"
 
+models.signals.post_save.connect(share_responsibility, sender=VariableExpense)
 
 class FixedExpense(Expense):
     start = models.DateField(u"De")
