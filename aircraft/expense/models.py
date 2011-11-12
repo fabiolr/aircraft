@@ -3,6 +3,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+from signals import calculate_expense_responsibility
+
 EXPENSE_TYPES = {1: u'Direta por operação',
                  2: u'Variável operacional',
                  3: u'Fixa operacional',
@@ -19,9 +21,12 @@ OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
 
 class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
-    system_user = models.ForeignKey(User, verbose_name=u"usuário")
+    system_user = models.ForeignKey(User, verbose_name=u"usuário", blank=True, null=True)
     owner = models.BooleanField(u"É proprietário do avião?", default=False)
 
+    def __unicode__(self):
+        return self.name
+    
     class Meta:
         verbose_name = u"Pessoa"
     
@@ -34,6 +39,9 @@ class Flight(models.Model):
     cycles = models.IntegerField(u"Ciclos", blank=False, null=False)
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
 
+    def __unicode__(self):
+        return ' '.join((self.date, self.origin, self.destiny))
+
     class Meta:
         verbose_name = u"Vôo"
 
@@ -42,6 +50,9 @@ class PAX(models.Model):
     owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
     ammount = models.IntegerField()
 
+    def __unicode__(self):
+        return '%s %.2f' % (self.owner.name, self.ammount)
+    
     class Meta:
         verbose_name = u"PAX"
         verbose_name_plural = u"PAX"
@@ -61,17 +72,28 @@ class ExpenseCategory(models.Model):
 class Expense(models.Model):
     ammount = models.FloatField(u"Valor", blank=False, null=False)
     date = models.DateField(u"Data", blank=False, null=False)
-    category = models.ForeignKey(ExpenseCategory)
+    category = models.ForeignKey(ExpenseCategory, blank=True, null=True)
+
+    def __unicode__(self):
+        return '%s %.2f' % (self.date, self.ammount)
+
+    def __repr__(self):
+        return '%s %.2f' % (self.__class__.__name__, self.ammount)
 
     class Meta:
         verbose_name = u"Despesa"
         ordering = ['-date']
+
+models.signals.post_save.connect(calculate_expense_responsibility, sender=Expense)
 
 class Payment(models.Model):
     expense = models.ForeignKey(Expense)
     person = models.ForeignKey(Person)
     ammount = models.FloatField()
 
+    def __unicode__(self):
+        return '%s %.2f' % (self.person.name, self.ammount)
+    
     class Meta:
         verbose_name = u"Pagamento"
 
@@ -80,6 +102,9 @@ class Responsibility(models.Model):
     owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
     ammount = models.FloatField()
 
+    def __unicode__(self):
+        return '%s %.2f' % (self.owner.name, self.ammount)
+    
     class Meta:
         verbose_name = u"Responsabilidade"
 

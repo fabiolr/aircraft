@@ -12,7 +12,7 @@ class Migration(SchemaMigration):
         db.create_table('expense_person', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('system_user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+            ('system_user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True)),
             ('owner', self.gf('django.db.models.fields.BooleanField')(default=False)),
         ))
         db.send_create_signal('expense', ['Person'])
@@ -52,7 +52,7 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('ammount', self.gf('django.db.models.fields.FloatField')()),
             ('date', self.gf('django.db.models.fields.DateField')()),
-            ('category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['expense.ExpenseCategory'])),
+            ('category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['expense.ExpenseCategory'], null=True, blank=True)),
         ))
         db.send_create_signal('expense', ['Expense'])
 
@@ -226,7 +226,7 @@ class Migration(SchemaMigration):
         'expense.expense': {
             'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
             'ammount': ('django.db.models.fields.FloatField', [], {}),
-            'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.ExpenseCategory']"}),
+            'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
             'date': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
@@ -281,7 +281,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'owner': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'system_user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
+            'system_user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
         },
         'expense.responsibility': {
             'Meta': {'object_name': 'Responsibility'},

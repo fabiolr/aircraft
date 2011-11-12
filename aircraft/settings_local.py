@@ -2,7 +2,7 @@
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': 'aircraft',                   # Or path to database file if using sqlite3.
         'USER': 'root',                       # Not used with sqlite3.
         'PASSWORD': '',                       # Not used with sqlite3.
@@ -11,12 +11,13 @@ DATABASES = {
     }
 }
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 import sys
 if 'test' in sys.argv:
     DATABASES['default']['ENGINE'] = 'sqlite3'
+    INSTALLED_APPS = tuple(INSTALLED_APPS[1:])
 
 #INTERNAL_IPS = ('127.0.0.1',)
 #MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
