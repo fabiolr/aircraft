@@ -17,16 +17,10 @@ OUTAGE_TYPES = (u'Mau uso',
 
 OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
 
-class Owner(User):
-    pass
-
-class Share(models.Model):
-    users = models.ManyToManyField(User, through='UserShare', verbose_name=u"Divisão")
-
-class UserShare(models.Model):
-    user = models.ForeignKey(User)
-    share = models.ForeignKey(Share)
-    ammount = models.FloatField()
+class Person(models.Model):
+    name = models.CharField(u"Nome", max_length=64)
+    system_user = models.ForeignKey(User, verbose_name=u"usuário")
+    owner = models.BooleanField(u"É proprietário do avião?", default=False)
     
 class Flight(models.Model):
     date = models.DateField(u"Data", blank=False, null=False)
@@ -35,12 +29,21 @@ class Flight(models.Model):
     start_hobbs = models.FloatField(u"Hobbs Saída", blank=False, null=False)
     end_hobbs = models.FloatField(u"Hobbs Chegada", blank=False, null=False)
     cycles = models.IntegerField(u"Ciclos", blank=False, null=False)
-    responsibility = models.ForeignKey(Share)
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
 
     class Meta:
         verbose_name = u"Vôo"
 
+class FlightResponsibility(models.Model):
+    flight = models.ForeignKey(Flight)
+    owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
+    ammount = models.IntegerField()
+
+    class Meta:
+        verbose_name = u"PAX"
+        verbose_name_plural = u"PAX"
+        
+    
 class ExpenseCategory(models.Model):
     name = models.CharField(u"Nome", max_length=32)
     expense_type = models.IntegerField(u"Tipo de despesa", choices=EXPENSE_TYPES.items())
@@ -55,14 +58,28 @@ class ExpenseCategory(models.Model):
     
 class Expense(models.Model):
     ammount = models.FloatField(u"Valor", blank=False, null=False)
-    paid_by = models.ForeignKey(Share, related_name="paid", verbose_name=u"Quem pagou?") 
-    responsibility = models.ForeignKey(Share, related_name="responsible", editable=False)
     date = models.DateField(u"Data", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory)
 
     class Meta:
         verbose_name = u"Despesa"
         ordering = ['-date']
+
+class Payment(models.Model):
+    expense = models.ForeignKey(Expense)
+    user = models.ForeignKey(Person)
+    ammount = models.FloatField()
+
+    class Meta:
+        verbose_name = u"Pagamento"
+
+class ExpenseResponsibility(models.Model):
+    expense = models.ForeignKey(Expense)
+    owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
+    ammount = models.FloatField()
+
+    class Meta:
+        verbose_name = u"Responsabilidade"
 
 class DirectExpense(Expense):
     flight = models.ForeignKey(Flight) 
@@ -121,7 +138,9 @@ class EventualMantainance(models.Model):
 
 class Payments(models.Model):
     date = models.DateField(u"Data")
-    by = models.ForeignKey(Owner, verbose_name=u"De", related_name='payments_made')
-    to = models.ForeignKey(Owner, verbose_name=u"Para", related_name='payments_received')
+    by = models.ForeignKey(Person, limit_choices_to={'owner': True},
+                           verbose_name=u"De", related_name='payments_made')
+    to = models.ForeignKey(Person, limit_choices_to={'owner': True},
+                           verbose_name=u"Para", related_name='payments_received')
     ammount = models.FloatField(u"Valor", blank=False, null=False)
 
