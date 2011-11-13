@@ -456,3 +456,123 @@ class HourlyMantainanceTest(TestCase):
         self.assertEquals(responsibility[0].ammount, 1000)
         self.assertEquals(responsibility[1].owner.id, 2)
         self.assertEquals(responsibility[1].ammount, 2000)
+
+class ScheduleMantainanceTest(TestCase):
+    fixtures = ['3_return_flights_in_3_months.json']
+    
+    
+    def test_only_considers_given_period(self):
+        # Only second flight
+        expense = ScheduleMantainance.objects.create(period=30,#2011, 11, 1),
+                                                     mantainance_date=date(2011, 11, 30),
+                                                     date=date(2011, 12, 15),
+                                                     ammount=1500,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 1)
+        self.assertEquals(responsibility[0].owner.id, 2)
+        self.assertEquals(responsibility[0].ammount, 1500)
+
+    
+    def test_considers_total_pax_over_all_flights(self):
+        # First and second flight, should be equally distributed
+        expense = ScheduleMantainance.objects.create(period=60,#2011, 10, 1),
+                                                     mantainance_date=date(2011, 11, 30),
+                                                     date=date(2011, 12, 15),
+                                                     ammount=1500,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 750)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 750)
+
+        # Only third flight
+        expense = ScheduleMantainance.objects.create(period=15,#2011, 12, 1),
+                                                     mantainance_date=date(2011, 12, 15),
+                                                     date=date(2011, 12, 15),
+                                                     ammount=1500,
+                                                     )
+        
+        responsibility = expense.responsibility_set.all()
+
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 500)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 1000)
+
+
+    def test_considers_hobbs_of_each_flight(self):
+        # second and third flights
+        # second is 20 hobbs, only owner 2
+        # third is 60 hobbs, and owner 2 has twice PAX
+        expense = ScheduleMantainance.objects.create(period=45,#2011, 11, 1),
+                                                     mantainance_date=date(2011, 12, 15),
+                                                     date=date(2011, 12, 15),
+                                                     ammount=800,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 200)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 600)
+
+    def test_mantainance_is_shared_equally(self):
+        # The two way flight for mantainances
+        expense = ScheduleMantainance.objects.create(period=4,#2011, 12, 18),
+                                                     mantainance_date=date(2011, 12, 22),
+                                                     date=date(2011, 12, 25),
+                                                     ammount=100,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 50)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 50)
+
+
+        # Now the two flights, going and returning, one for mantainance
+        
+        expense = ScheduleMantainance.objects.create(period=22,#2011, 12, 1),
+                                                     mantainance_date=date(2011, 12, 22),
+                                                     date=date(2011, 12, 25),
+                                                     ammount=6400,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 2200)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 4200)
+
+    
+    def test_return_flight_considers_pax_of_last_flight(self):
+        expense = ScheduleMantainance.objects.create(period=9,#2011, 12, 13),
+                                                     mantainance_date=date(2011, 12, 22),
+                                                     date=date(2011, 12, 22),
+                                                     ammount=3400,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 1200)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 2200)
+
+

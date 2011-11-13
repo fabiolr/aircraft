@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import collections
+from datetime import timedelta
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -255,7 +257,6 @@ class HourlyMantainance(Expense):
 
     @property
     def flights(self):
-        hobbs = self.hobbs - self.hours
         return Flight.objects.filter(end_hobbs__gt=self.hobbs-self.hours) \
                              .exclude(start_hobbs__gte=self.hobbs)
 
@@ -266,13 +267,19 @@ class HourlyMantainance(Expense):
 models.signals.post_save.connect(share_responsibility, sender=HourlyMantainance, dispatch_uid="hmantainance")
 
 class ScheduleMantainance(Expense):
-    entrance_date = models.DateField(u"Data de chegada na oficina")
+    mantainance_date = models.DateField(u"Data de chegada na oficina")
     period = models.IntegerField(u"Período vencido em dias")
+
+    @property
+    def flights(self):
+        start_date = self.mantainance_date - timedelta(self.period)
+        return Flight.objects.filter(date__gte=start_date, date__lte=self.mantainance_date)
 
     class Meta:
         verbose_name = u"Manutenção calendárica"
         verbose_name_plural = u"Manutenções calendáricas"
     
+models.signals.post_save.connect(share_responsibility, sender=ScheduleMantainance, dispatch_uid="smantainance")
 
 class EventualMantainance(Expense):
     flight = models.ForeignKey(Flight, blank=True)
