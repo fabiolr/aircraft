@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 
 from expense.models import (Person, Expense, Responsibility, Flight,
                             DirectExpense, VariableExpense, FixedExpense,
+                            HourlyMantainance, ScheduleMantainance, EventualMantainance,
                             )
 
 from . import dev
@@ -343,5 +344,115 @@ class FixedExpenseTest(TestCase):
         self.assertEquals(responsibility[1].owner.id, 2)
         self.assertEquals(responsibility[1].ammount, 500)
 
+class HourlyMantainanceTest(TestCase):
+    
+    fixtures = ['3_return_flights_in_3_months.json']
+    
+    def test_only_considers_desired_hobbs_interval(self):
+        # Second flight
+        # Second flight is 140-170 hobbs, so it will be fully considered.
+        # There are 60 hobbs being considered, user 1 pays for 20 and 2 for 40
         
+        expense = HourlyMantainance.objects.create(hobbs=200,
+                                                   hours=50,
+                                                   date=date(2011, 12, 25),
+                                                   mantainance_date=date(2011,12,23),
+                                                   ammount=6000,
+                                                   )
+
+        responsibility = expense.responsibility_set.all()
         
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 2000)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 4000)
+
+    
+    def test_considers_total_pax_over_all_flights(self):
+        # First and second flight, should be equally distributed
+        expense = HourlyMantainance.objects.create(hobbs=140,
+                                                   hours=40,
+                                                   date=date(2011, 12, 15),
+                                                   mantainance_date=date(2011,12,23),
+                                                   ammount=1500,
+                                                   )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 750)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 750)
+
+        # Only third flight
+        expense = HourlyMantainance.objects.create(hobbs=200,
+                                                   hours=60,
+                                                   date=date(2011, 12, 15),
+                                                   mantainance_date=date(2011,12,23),
+                                                   ammount=1500,
+                                                   )
+        
+        responsibility = expense.responsibility_set.all()
+
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 500)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 1000)
+
+
+    def test_considers_hobbs_of_each_flight(self):
+        # second and third flights
+        # second is 20 hobbs, only owner 2
+        # third is 60 hobbs, and owner 2 has twice PAX
+        expense = HourlyMantainance.objects.create(hobbs=200,
+                                                   hours=80,
+                                                   date=date(2011, 12, 15),
+                                                   mantainance_date=date(2011,12,23),
+                                                   ammount=800,
+                                                   )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 200)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 600)
+
+    def test_mantainance_is_shared_equally(self):
+        # All three flights considered, plus one way to mantainance
+        # 102 hobbs total. 1 pays for 41 and 2 for 62
+        expense = HourlyMantainance.objects.create(hobbs=202,
+                                                   hours=100,
+                                                   date=date(2011, 12, 25),
+                                                   mantainance_date=date(2011,12,23),
+                                                   ammount=10200,
+                                                   )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 4100)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 6100)
+
+
+    def test_return_flight_considers_pax_of_last_flight(self):
+        expense = HourlyMantainance.objects.create(hobbs=200,
+                                                   hours=30,
+                                                   date=date(2011, 12, 22),
+                                                   mantainance_date=date(2011,12,23),
+                                                   ammount=3000,
+                                                   )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 1000)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 2000)

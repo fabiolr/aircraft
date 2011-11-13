@@ -139,6 +139,24 @@ class Expense(models.Model):
         for owner, responsibility in responsibilities:
             self.responsibility_set.create(ammount=responsibility, owner=owner)
 
+    def share(self):
+        
+        
+        total_hobbs =  self.flights.aggregate(models.Sum('end_hobbs'))['end_hobbs__sum']
+        total_hobbs -= self.flights.aggregate(models.Sum('start_hobbs'))['start_hobbs__sum']
+        
+        shares = collections.Counter()
+
+        for flight in self.flights:
+            ammount = self.ammount * flight.hobbs / total_hobbs
+            
+            for owner, share in flight.responsibilities(ammount):
+                shares[owner.id] += share
+
+        shares = [ (Person.objects.get(id=item[0]), item[1]) for item in shares.items() ]
+        
+        return super(self.__class__, self).apply_share(shares)
+
             
     def __unicode__(self):
         return '%s %.2f' % (self.date, self.ammount)
@@ -196,24 +214,10 @@ class VariableExpense(Expense):
     start = models.DateField(u"De")
     end = models.DateField(u"Até")
 
-    def share(self):
-        flights = Flight.objects.filter(date__gte=self.start, date__lte=self.end)
+    @property
+    def flights(self):
+        return Flight.objects.filter(date__gte=self.start, date__lte=self.end)
         
-        total_hobbs =  flights.aggregate(models.Sum('end_hobbs'))['end_hobbs__sum']
-        total_hobbs -= flights.aggregate(models.Sum('start_hobbs'))['start_hobbs__sum']
-        
-        shares = collections.Counter()
-
-        for flight in flights:
-            ammount = self.ammount * flight.hobbs / total_hobbs
-            
-            for owner, share in flight.responsibilities(ammount):
-                shares[owner.id] += share
-
-        shares = [ (Person.objects.get(id=item[0]), item[1]) for item in shares.items() ]
-        
-        return super(VariableExpense, self).apply_share(shares)
-
     def __unicode__(self):
         return self.ammount
     
@@ -249,10 +253,17 @@ class HourlyMantainance(Expense):
     hours = models.IntegerField(u"Nº de horas da inspeção")
     obs = models.CharField(u"Observações", max_length=255)
 
+    @property
+    def flights(self):
+        hobbs = self.hobbs - self.hours
+        return Flight.objects.filter(end_hobbs__gt=self.hobbs-self.hours) \
+                             .exclude(start_hobbs__gte=self.hobbs)
+
     class Meta:
         verbose_name = u"Manutenção por hora"
         verbose_name_plural = u"Manutenções por hora"
         
+models.signals.post_save.connect(share_responsibility, sender=HourlyMantainance, dispatch_uid="hmantainance")
 
 class ScheduleMantainance(Expense):
     entrance_date = models.DateField(u"Data de chegada na oficina")
