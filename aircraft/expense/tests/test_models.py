@@ -576,3 +576,39 @@ class ScheduleMantainanceTest(TestCase):
         self.assertEquals(responsibility[1].ammount, 2200)
 
 
+class EventualMantainanceTest(TestCase):
+    
+    def test_if_there_is_responsible_than_he_pays_for_all(self):
+        owner1 = Person.objects.create(name=u'Owner 1', owner=True)
+        owner2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        expense = EventualMantainance.objects.create(discovery_date=date(2011, 12, 22),
+                                                     date=date(2011, 12, 22),
+                                                     responsible=owner1,
+                                                     ammount=5000,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 1)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 5000)
+
+    def test_if_there_is_no_responsible_bill_is_shared(self):
+        owner1 = Person.objects.create(name=u'Owner 1', owner=True)
+        owner2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        expense = EventualMantainance.objects.create(discovery_date=date(2011, 12, 22),
+                                                     date=date(2011, 12, 22),
+                                                     ammount=5000,
+                                                     )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 2500)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 2500)
+
+ 

@@ -141,9 +141,7 @@ class Expense(models.Model):
         for owner, responsibility in responsibilities:
             self.responsibility_set.create(ammount=responsibility, owner=owner)
 
-    def share(self):
-        
-        
+    def share_by_flights(self):
         total_hobbs =  self.flights.aggregate(models.Sum('end_hobbs'))['end_hobbs__sum']
         total_hobbs -= self.flights.aggregate(models.Sum('start_hobbs'))['start_hobbs__sum']
         
@@ -157,8 +155,15 @@ class Expense(models.Model):
 
         shares = [ (Person.objects.get(id=item[0]), item[1]) for item in shares.items() ]
         
-        return super(self.__class__, self).apply_share(shares)
+        return self.apply_share(shares)
 
+    def share_equally(self):
+        owners = Person.objects.filter(owner=True)
+        shares = [ (owner, self.ammount/owners.count()) for owner in owners.all() ]
+        return self.apply_share(shares)        
+
+    def blame(self, owner):
+        self.apply_share(((self.responsible, self.ammount),))
             
     def __unicode__(self):
         return '%s %.2f' % (self.date, self.ammount)
@@ -203,8 +208,7 @@ class DirectExpense(Expense):
     description = models.CharField(u"Descrição", max_length=255)
 
     def share(self):
-        share = self.flight.responsibilities(self.ammount)
-        return super(DirectExpense, self).apply_share(share)
+        self.apply_share(self.flight.responsibilities(self.ammount))
             
     class Meta:
         verbose_name = u"Despesa direta por operação"
@@ -215,6 +219,9 @@ models.signals.post_save.connect(share_responsibility, sender=DirectExpense, dis
 class VariableExpense(Expense):
     start = models.DateField(u"De")
     end = models.DateField(u"Até")
+
+    def share(self):
+        self.share_by_flights()
 
     @property
     def flights(self):
@@ -239,9 +246,7 @@ class FixedExpense(Expense):
                                                         ), default=0)
 
     def share(self):
-        owners = Person.objects.filter(owner=True)
-        shares = [ (owner, self.ammount/owners.count()) for owner in owners.all() ]
-        return super(FixedExpense, self).apply_share(shares)
+        self.share_equally()
         
     class Meta:
         verbose_name = u"Despesa fixa operacional"
@@ -254,6 +259,9 @@ class HourlyMantainance(Expense):
     hobbs = models.FloatField(u"Hobbs de chegada na oficina")
     hours = models.IntegerField(u"Nº de horas da inspeção")
     obs = models.CharField(u"Observações", max_length=255)
+
+    def share(self):
+        self.share_by_flights()
 
     @property
     def flights(self):
@@ -270,6 +278,9 @@ class ScheduleMantainance(Expense):
     mantainance_date = models.DateField(u"Data de chegada na oficina")
     period = models.IntegerField(u"Período vencido em dias")
 
+    def share(self):
+        self.share_by_flights()
+
     @property
     def flights(self):
         start_date = self.mantainance_date - timedelta(self.period)
@@ -282,16 +293,24 @@ class ScheduleMantainance(Expense):
 models.signals.post_save.connect(share_responsibility, sender=ScheduleMantainance, dispatch_uid="smantainance")
 
 class EventualMantainance(Expense):
-    flight = models.ForeignKey(Flight, blank=True)
+    flight = models.ForeignKey(Flight, null=True)
     outage_type = models.CharField(u"Tipo", max_length=16, choices=OUTAGE_CHOICES)
     discovery_date = models.DateField(u"Data de percepção da pane")
     cause = models.CharField(u"Causa provável", max_length=255)
     responsible = models.ForeignKey(Person, limit_choices_to={'owner': True},
-                                    verbose_name = "Responsável")
+                                    verbose_name = "Responsável", null=True)
+
+    def share(self):
+        if self.responsible:
+            self.blame(self.responsible)
+        else:
+            self.share_equally()
 
     class Meta:
         verbose_name = u"Manutenção eventual"
         verbose_name_plural = u"Manuenções eventuais (Panes)"
+
+models.signals.post_save.connect(share_responsibility, sender=EventualMantainance, dispatch_uid="emantainance")
 
 class Payment(models.Model):
     date = models.DateField(u"Data")
