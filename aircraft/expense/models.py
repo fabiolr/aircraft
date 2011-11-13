@@ -230,11 +230,18 @@ class FixedExpense(Expense):
     repeat = models.IntegerField(u"Repetição", choices=((0, u"Não"),
                                                         (1, u"Mensalmente"),
                                                         (2, u"Anualmente"),
-                                                        ))
+                                                        ), default=0)
+
+    def share(self):
+        owners = Person.objects.filter(owner=True)
+        shares = [ (owner, self.ammount/owners.count()) for owner in owners.all() ]
+        return super(FixedExpense, self).apply_share(shares)
+        
     class Meta:
         verbose_name = u"Despesa fixa operacional"
         verbose_name_plural = u"Despesas fixas operacionais"
 
+models.signals.post_save.connect(share_responsibility, sender=FixedExpense, dispatch_uid="fixedexpense")
 
 class HourlyMantainance(Expense):
     mantainance_date = models.DateField(u"Data de chegada na oficina")

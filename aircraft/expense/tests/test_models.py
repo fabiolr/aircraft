@@ -13,7 +13,6 @@ from . import dev
 
 class TestDirectExpense(TestCase):
 
-    
     def test_responsibility_is_shared_proportional_to_pax(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
@@ -246,7 +245,6 @@ class VariableExpenseTest(TestCase):
         self.assertEquals(responsibility[1].ammount, 1000)
 
 
-    @dev
     def test_considers_hobbs_of_each_flight(self):
         # second and third flights
         # second is 20 hobbs, only owner 2
@@ -313,3 +311,37 @@ class VariableExpenseTest(TestCase):
         self.assertEquals(responsibility[0].ammount, 1200)
         self.assertEquals(responsibility[1].owner.id, 2)
         self.assertEquals(responsibility[1].ammount, 2200)
+
+
+class FixedExpenseTest(TestCase):
+
+    def test_expenses_are_shared_equally_no_matter_flights(self):
+        owner1 = Person.objects.create(name=u'Owner 1', owner=True)
+        owner2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        flight = Flight.objects.create(date=date(2011, 11, 12),
+                                       origin='SBJD',
+                                       destiny='ABCD',
+                                       start_hobbs=100,
+                                       end_hobbs=200,
+                                       cycles=3,
+                                       )
+
+        flight.pax_set.create(owner=owner1, ammount=10)
+
+        expense = FixedExpense.objects.create(start=date(2011, 11, 1),
+                                              end=date(2011, 11, 30),
+                                              date=date(2011, 12, 1),
+                                              ammount=1000,
+                                              )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 500)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 500)
+
+        
+        
