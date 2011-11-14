@@ -1,11 +1,13 @@
 from django.contrib import admin
+from admin_tools.dashboard import Dashboard
+
 from forms import DirectExpenseForm, VariableExpenseForm, FixedExpenseForm
 
 from aircraft.expense.models import * #(Flight, Expense, ExpenseCategory, DirectExpense, VariableExpense, 
                                       #FixedExpense, Responsibility, Payment, PAX)
 
 class PersonAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('name', 'system_user', 'owner')
 
 # Flight
 
@@ -22,7 +24,6 @@ class FlightAdmin(admin.ModelAdmin):
 
 class ExpenseCategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'expense_type')
-    pass
 
 
 class PaymentInline(admin.TabularInline):
@@ -75,15 +76,12 @@ class FixedExpenseAdmin(ExpenseAdmin):
 class HourlyMantainanceAdmin(ExpenseAdmin):
     exclude = ('category',)
     list_filter = ('date',)
-    pass
 
 class ScheduledMantainanceAdmin(ExpenseAdmin):
     list_filter = ('date',)
-    pass
 
 class EventualMantainanceAdmin(ExpenseAdmin):
     list_filter = ('date', 'category')
-    pass
 
 class InterpaymentAdmin(admin.ModelAdmin):
     list_display = ('date', 'by', 'to', 'ammount')
