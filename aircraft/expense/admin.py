@@ -35,7 +35,7 @@ class PaymentInline(admin.TabularInline):
         verbose_name_plural = u"Pagamentos"
 
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ('ammount', 'date', 'type_name', 'category_name', 'expense', 'responsibility')
+    list_display = ('ammount', 'date', 'type_name', 'category_name', 'child', 'responsibility')
     list_filter = ('date', 'category')
     search_fields = ('ammount',)
 
@@ -55,19 +55,6 @@ class ExpenseAdmin(admin.ModelAdmin):
 
     type_name.short_description = 'Tipo de despesa'
     
-    def expense(self, expense):
-        if expense.__class__ is not Expense:
-            return expense
-        for attr in ('directexpense', 'variableexpense', 'fixedexpense',
-                     'hourlymantainance', 'schedulemantainance', 'eventualmantainance'):
-            try:
-                return getattr(expense, attr)
-            except Expense.DoesNotExist:
-                pass
-
-    expense.short_description = u'Despesa'
-    
-
 class DirectExpenseAdmin(ExpenseAdmin):
     list_display = ( 'ammount', 'date', 'flight', 'responsibility' )
     list_filter = ('date', 'category')
@@ -87,11 +74,11 @@ class FixedExpenseAdmin(ExpenseAdmin):
 
 class HourlyMantainanceAdmin(ExpenseAdmin):
     exclude = ('category',)
-    list_filter = ('date', 'ammount')
+    list_filter = ('date',)
     pass
 
 class ScheduledMantainanceAdmin(ExpenseAdmin):
-    list_filter = ('date', 'ammount')
+    list_filter = ('date',)
     pass
 
 class EventualMantainanceAdmin(ExpenseAdmin):

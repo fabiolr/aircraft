@@ -3,6 +3,7 @@
 import collections
 from datetime import timedelta
 
+from django import core
 from django.db import models
 from django.db.models import Sum
 from django.core.exceptions import ValidationError
@@ -114,7 +115,6 @@ def propagate_pax_changes(sender, **kwargs):
     
 models.signals.post_save.connect(propagate_pax_changes, sender=PAX, dispatch_uid="pax")
 
-
 class ExpenseCategory(models.Model):
     name = models.CharField(u"Nome", max_length=32)
     expense_type = models.IntegerField(u"Tipo de despesa", choices=EXPENSE_TYPES.items())
@@ -128,10 +128,14 @@ class ExpenseCategory(models.Model):
         ordering = ('expense_type', 'name')
     
 class Expense(models.Model):
-    ammount = models.FloatField(u"Valor", blank=False, null=False)
+    #ammount = models.FloatField(u"Valor", blank=False, null=False)
     date = models.DateField(u"Data do pagamento", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, verbose_name=u'Categoria', blank=True, null=True)
 
+    @property
+    def ammount(self):
+        return self.payment_set.aggregate(Sum('ammount'))['ammount__sum']
+    
     def share_by_flights(self):
         if self.flights.count() == 0:
             return self.share_equally()
@@ -166,6 +170,18 @@ class Expense(models.Model):
         for owner, responsibility in responsibilities:
             self.responsibility_set.create(ammount=responsibility, owner=owner)
 
+    def child(self):
+        if self.__class__ is not Expense:
+            return self
+        for attr in ('directexpense', 'variableexpense', 'fixedexpense',
+                     'hourlymantainance', 'schedulemantainance', 'eventualmantainance'):
+            try:
+                return getattr(self, attr)
+            except Expense.DoesNotExist:
+                pass
+
+    child.short_description = u'Despesa'
+
     @property
     def responsibility(self):
         return ' / '.join([ 'R$ %.2f %s' % (r.ammount, r.owner.name) for r in self.responsibility_set.all() ])
@@ -192,6 +208,15 @@ class Payment(models.Model):
         verbose_name = u"Pagamento"
         verbose_name_plural = u"Pago por"
 
+def share_expense_responsibility(sender, **kwargs):
+    try:
+        kwargs['instance'].expense.child().share()
+    except AttributeError:
+        # tests
+        pass
+    
+models.signals.post_save.connect(share_expense_responsibility, sender=Payment, dispatch_uid="payment")
+
 class Responsibility(models.Model):
     expense = models.ForeignKey(Expense)
     owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
@@ -206,6 +231,7 @@ class Responsibility(models.Model):
 
 #signal
 def share_responsibility(sender, **kwargs):
+    import ipdb; ipdb.set_trace()
     if kwargs['instance'].ammount:
         kwargs['instance'].share()
 
@@ -337,18 +363,20 @@ class EventualMantainance(Expense):
 models.signals.post_save.connect(share_responsibility, sender=EventualMantainance, dispatch_uid="emantainance")
 
 class Interpayment(models.Model):
-    date = models.DateField(u"Data")
+    date = models.DateField(u"Data", null=True)
     by = models.ForeignKey(Person, limit_choices_to={'owner': True},
                            verbose_name=u"De", related_name='transferences_made')
     to = models.ForeignKey(Person, limit_choices_to={'owner': True},
                            verbose_name=u"Para", related_name='transferences_received')
     ammount = models.FloatField(u"Valor", blank=False, null=False)
+    paid = models.BooleanField(u"Pago", blank=True, default=True)
 
     def __unicode__(self):
         return 'R$ %.2f %s - %s' % (self.ammount, self.by, self.to)
 
     class Meta:
         verbose_name = u"Interpagamento"
+        ordering = ('paid', '-date')
 
 
 def calculate_interpayments():
@@ -362,8 +390,8 @@ def calculate_interpayments():
         p.balance = 0
         p.balance += p.payment_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance -= p.responsibility_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
-        p.balance += p.transferences_made.aggregate(Sum('ammount'))['ammount__sum'] or 0
-        p.balance -= p.transferences_received.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance += p.transferences_made.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance -= p.transferences_received.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
         
         if p.balance > 0:
             creditors.append(p)
@@ -393,7 +421,27 @@ def calculate_interpayments():
             debtors.pop(0)
 
     return tuple(result)
+
+
+calculation = { 'triggered': True }
+
+def trigger_calculation(*args, **kwargs):
+    calculation['triggered'] = True
+
+def do_calculations(*args, **kwargs):
+    if not calculation['triggered']:
+        return
+
+    calculation['triggered'] = False
+    for pay in Interpayment.objects.filter(paid=False):
+        pay.delete()
+
+    for pay in calculate_interpayments():
+        Interpayment.objects.create(by=pay[0], to=pay[1], ammount=pay[2])
             
+models.signals.post_save.connect(trigger_calculation, sender=FixedExpense, dispatch_uid="interpayments_1")
+models.signals.post_save.connect(trigger_calculation, sender=Interpayment, dispatch_uid="interpayments_3")
 
 
-
+#core.signals.request_finished.connect(do_calculations, sender=core.handler.base.BaseHandler,
+#                                      dispatch_uid="do_calc")

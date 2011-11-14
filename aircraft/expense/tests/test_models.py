@@ -11,10 +11,13 @@ from expense.models import (Person, Expense, Responsibility, Flight, Interpaymen
                             calculate_interpayments
                             )
 
-from . import dev
+from . import dev, set_ammount
+from fixtures import fixtures_3_return_flights_in_3_months
+
 
 class TestDirectExpense(TestCase):
 
+    @dev
     def test_responsibility_is_shared_proportional_to_pax(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
@@ -35,8 +38,8 @@ class TestDirectExpense(TestCase):
 
         expense = DirectExpense.objects.create(date=date(2011, 11, 12),
                                                flight=flight,
-                                               ammount=1600,
                                                )
+        set_ammount(expense, 1600)
 
         responsibility = expense.responsibility_set.all()
       
@@ -46,7 +49,7 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[0].ammount, 600)
         self.assertEquals(responsibility[1].ammount, 1000)
 
-        expense.ammount = 1200
+        set_ammount(expense, 1200)
         expense.save()
         responsibility = expense.responsibility_set.all()
         
@@ -82,8 +85,9 @@ class TestDirectExpense(TestCase):
 
         expense = DirectExpense.objects.create(date=date(2011, 11, 12),
                                                flight=flight,
-                                               ammount=1600,
                                                )
+        set_ammount(expense, 1600)
+
 
         responsibility = expense.responsibility_set.all()
         
@@ -93,8 +97,7 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[0].ammount, 800)
         self.assertEquals(responsibility[1].ammount, 800)
 
-        expense.ammount = 1200
-        expense.save()
+        set_ammount(expense, 1200)
         responsibility = expense.responsibility_set.all()
         
         self.assertEquals(len(responsibility), 2)
@@ -135,7 +138,7 @@ class TestDirectExpense(TestCase):
                                                flight=flight2,
                                                ammount=1600,
                                                )
-
+        set_ammount(expense, 1600)
         responsibility = expense.responsibility_set.all()
         
         self.assertEquals(len(responsibility), 2)
@@ -156,6 +159,7 @@ class TestDirectExpense(TestCase):
                                                flight=flight2,
                                                ammount=2400,
                                                )
+        set_ammount(expense, 2400)
 
         responsibility = expense.responsibility_set.all()
         
@@ -179,11 +183,14 @@ class TestDirectExpense(TestCase):
                                                    flight=flight4,
                                                    ammount=1600,
                                                    )
+            set_ammount(expense, 1600)
 
         except ValidationError:
             pass
         else:
             self.fail("Flight departing base must have either pax or mantainance")
+
+
 
 class VariableExpenseTest(TestCase):
 
@@ -197,8 +204,9 @@ class VariableExpenseTest(TestCase):
     On December 20 it goes to mantainance and back, 4 hobbs
     
     """
-    fixtures = ['3_return_flights_in_3_months.json']
-    
+
+    def setUp(self):
+        fixtures_3_return_flights_in_3_months()    
     
     def test_only_considers_given_period(self):
         # Only second flight
@@ -207,6 +215,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 15),
                                                  ammount=1500,
                                                  )
+        set_ammount(expense, 1500)
 
         responsibility = expense.responsibility_set.all()
         
@@ -222,6 +231,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 15),
                                                  ammount=1500,
                                                  )
+        set_ammount(expense, 1500)
 
         responsibility = expense.responsibility_set.all()
         
@@ -237,6 +247,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 15),
                                                  ammount=1500,
                                                  )
+        set_ammount(expense, 1500)
         
         responsibility = expense.responsibility_set.all()
 
@@ -256,6 +267,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 15),
                                                  ammount=800,
                                                  )
+        set_ammount(expense, 800)
 
         responsibility = expense.responsibility_set.all()
         
@@ -272,6 +284,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 25),
                                                  ammount=100,
                                                  )
+        set_ammount(expense, 100)
 
         responsibility = expense.responsibility_set.all()
         
@@ -289,6 +302,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 25),
                                                  ammount=6400,
                                                  )
+        set_ammount(expense, 6400)
 
         responsibility = expense.responsibility_set.all()
         
@@ -305,6 +319,7 @@ class VariableExpenseTest(TestCase):
                                                  date=date(2011, 12, 22),
                                                  ammount=3400,
                                                  )
+        set_ammount(expense, 3400)
 
         responsibility = expense.responsibility_set.all()
         
@@ -336,6 +351,7 @@ class FixedExpenseTest(TestCase):
                                               date=date(2011, 12, 1),
                                               ammount=1000,
                                               )
+        set_ammount(expense, 1000)
 
         responsibility = expense.responsibility_set.all()
         
@@ -347,8 +363,8 @@ class FixedExpenseTest(TestCase):
 
 class HourlyMantainanceTest(TestCase):
     
-    fixtures = ['3_return_flights_in_3_months.json']
-
+    def setUp(self):
+        fixtures_3_return_flights_in_3_months()    
     
     def test_only_considers_desired_hobbs_interval(self):
         # Second flight
@@ -361,6 +377,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2011,12,23),
                                                    ammount=6000,
                                                    )
+        set_ammount(expense, 6000)
 
         responsibility = expense.responsibility_set.all()
         
@@ -379,6 +396,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2011,12,23),
                                                    ammount=1500,
                                                    )
+        set_ammount(expense, 1500)
 
         responsibility = expense.responsibility_set.all()
         
@@ -395,6 +413,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2011,12,23),
                                                    ammount=1500,
                                                    )
+        set_ammount(expense, 1500)
         
         responsibility = expense.responsibility_set.all()
 
@@ -415,6 +434,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2011,12,23),
                                                    ammount=800,
                                                    )
+        set_ammount(expense, 800)
 
         responsibility = expense.responsibility_set.all()
         
@@ -433,6 +453,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2011,12,23),
                                                    ammount=10200,
                                                    )
+        set_ammount(expense, 10200)
 
         responsibility = expense.responsibility_set.all()
         
@@ -450,6 +471,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2011,12,23),
                                                    ammount=3000,
                                                    )
+        set_ammount(expense, 3000)
 
         responsibility = expense.responsibility_set.all()
         
@@ -467,6 +489,7 @@ class HourlyMantainanceTest(TestCase):
                                                    mantainance_date=date(2012,12,23),
                                                    ammount=6000,
                                                    )
+        set_ammount(expense, 6000)
 
         responsibility = expense.responsibility_set.all()
         
@@ -478,7 +501,8 @@ class HourlyMantainanceTest(TestCase):
 
         
 class ScheduleMantainanceTest(TestCase):
-    fixtures = ['3_return_flights_in_3_months.json']
+    def setUp(self):
+        fixtures_3_return_flights_in_3_months()    
     
     
     def test_only_considers_given_period(self):
@@ -488,6 +512,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 15),
                                                      ammount=1500,
                                                      )
+        set_ammount(expense, 1500)
 
         responsibility = expense.responsibility_set.all()
         
@@ -503,6 +528,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 15),
                                                      ammount=1500,
                                                      )
+        set_ammount(expense, 1500)
 
         responsibility = expense.responsibility_set.all()
         
@@ -518,6 +544,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 15),
                                                      ammount=1500,
                                                      )
+        set_ammount(expense, 1500)
         
         responsibility = expense.responsibility_set.all()
 
@@ -537,6 +564,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 15),
                                                      ammount=800,
                                                      )
+        set_ammount(expense, 800)
 
         responsibility = expense.responsibility_set.all()
         
@@ -553,6 +581,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 25),
                                                      ammount=100,
                                                      )
+        set_ammount(expense, 100)
 
         responsibility = expense.responsibility_set.all()
         
@@ -570,6 +599,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 25),
                                                      ammount=6400,
                                                      )
+        set_ammount(expense, 6400)
 
         responsibility = expense.responsibility_set.all()
         
@@ -586,6 +616,7 @@ class ScheduleMantainanceTest(TestCase):
                                                      date=date(2011, 12, 22),
                                                      ammount=3400,
                                                      )
+        set_ammount(expense, 3400)
 
         responsibility = expense.responsibility_set.all()
         
@@ -607,6 +638,7 @@ class EventualMantainanceTest(TestCase):
                                                      responsible=owner1,
                                                      ammount=5000,
                                                      )
+        set_ammount(expense, 5000)
 
         responsibility = expense.responsibility_set.all()
         
@@ -622,6 +654,7 @@ class EventualMantainanceTest(TestCase):
                                                      date=date(2011, 12, 22),
                                                      ammount=5000,
                                                      )
+        set_ammount(expense, 5000)
 
         responsibility = expense.responsibility_set.all()
         
@@ -638,7 +671,7 @@ class InterpaymentCalculationTest(TestCase):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 13))
         ex.payment_set.create(ammount=500, paid_by=o1)
         ex.payment_set.create(ammount=500, paid_by=o2)
         ex.responsibility_set.create(ammount=500, owner=o1)
@@ -650,7 +683,7 @@ class InterpaymentCalculationTest(TestCase):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 13))
         ex.payment_set.create(ammount=1000, paid_by=o2)
         ex.responsibility_set.create(ammount=1000, owner=o1)
 
@@ -662,7 +695,7 @@ class InterpaymentCalculationTest(TestCase):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 13))
         ex.payment_set.create(ammount=1000, paid_by=o2)
         ex.responsibility_set.create(ammount=500, owner=o1)
         ex.responsibility_set.create(ammount=500, owner=o2)
@@ -675,7 +708,7 @@ class InterpaymentCalculationTest(TestCase):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 13))
         ex.payment_set.create(ammount=900, paid_by=o1)
         ex.payment_set.create(ammount=100, paid_by=o2)
         ex.responsibility_set.create(ammount=300, owner=o1)
@@ -689,7 +722,7 @@ class InterpaymentCalculationTest(TestCase):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 12))
         ex.payment_set.create(ammount=900, paid_by=o1)
         ex.payment_set.create(ammount=100, paid_by=o2)
         ex.responsibility_set.create(ammount=300, owner=o1)
@@ -705,13 +738,13 @@ class InterpaymentCalculationTest(TestCase):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 12))
         ex.payment_set.create(ammount=900, paid_by=o1)
         ex.payment_set.create(ammount=100, paid_by=o2)
         ex.responsibility_set.create(ammount=300, owner=o1)
         ex.responsibility_set.create(ammount=700, owner=o2)
 
-        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=2000)
+        ex = Expense.objects.create(date=date(2011, 11, 12))
         ex.payment_set.create(ammount=2000, paid_by=o2)
         ex.responsibility_set.create(ammount=1000, owner=o1)
         ex.responsibility_set.create(ammount=1000, owner=o2)
@@ -736,13 +769,13 @@ class InterpaymentCalculationTest(TestCase):
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
         p1 = Person.objects.create(name=u'Pilot')
 
-        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=1000)
+        ex = Expense.objects.create(date=date(2011, 11, 12))
         ex.payment_set.create(ammount=900, paid_by=o1)
         ex.payment_set.create(ammount=100, paid_by=o2)
         ex.responsibility_set.create(ammount=300, owner=o1)
         ex.responsibility_set.create(ammount=700, owner=o2)
 
-        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=2000)
+        ex = Expense.objects.create(date=date(2011, 11, 12))
         ex.payment_set.create(ammount=100, paid_by=p1)
         ex.responsibility_set.create(ammount=50, owner=o1)
         ex.responsibility_set.create(ammount=50, owner=o2)
@@ -763,4 +796,16 @@ class InterpaymentCalculationTest(TestCase):
 
         payments = calculate_interpayments()
         self.assertEquals(len(payments), 0)
+
+    def test_interpayments_are_calculated_when_one_expense_is_created(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = FixedExpense.objects.create(date=date(2011, 11, 13),
+                                         start=date(2011, 10, 1),
+                                         end=date(2011,11,1))
+        ex.payment_set.create(ammount=1000, paid_by=o2)
+
+        self.assertEquals(Interpayment.objects.filter(paid=True).count(), 0)
+        self.assertEquals(Interpayment.objects.filter(paid=False).count(), 1)
         
