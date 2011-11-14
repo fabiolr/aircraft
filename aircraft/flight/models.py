@@ -18,6 +18,7 @@ OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
 
 class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
+    system_user = models.ForeignKey(User, verbose_name=u"usuário", blank=True, null=True)
     owner = models.BooleanField(u"É proprietário do avião?", default=False)
     def __unicode__(self):
         return self.name
@@ -40,7 +41,7 @@ class Flight(models.Model):
 
     def responsibilities(self, ammount=1.0):
         if self.mantainance:
-            owners = User.objects.filter(owner=True)
+            owners = Person.objects.filter(owner=True)
             for owner in owners.all():
                 yield owner, ammount/owners.count()
 
@@ -83,7 +84,7 @@ class Flight(models.Model):
 
 class PAX(models.Model):
     flight = models.ForeignKey(Flight)
-    owner = models.ForeignKey(User, limit_choices_to={'owner': True})
+    owner = models.ForeignKey(Person, limit_choices_to={'owner': True})
     ammount = models.IntegerField()
 
     def propagate_changes(self):
@@ -107,7 +108,7 @@ class Outage(models.Model):
     outage_type = models.CharField(u"Tipo", max_length=16, choices=OUTAGE_CHOICES)
     discovery_date = models.DateField(u"Data de percepção da pane", blank=True, null=True)
     cause = models.CharField(u"Causa provável", max_length=255, blank=True, null=True)
-    responsible = models.ForeignKey(User, limit_choices_to={'owner': True},
+    responsible = models.ForeignKey(Person, limit_choices_to={'owner': True},
                                     verbose_name = "Responsável", blank=True, null=True)
 
     def __unicode__(self):

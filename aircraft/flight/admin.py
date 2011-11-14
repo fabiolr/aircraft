@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from flight.models import PAX, Flight
+from flight.models import PAX, Flight, Person, Outage
 
 class PersonAdmin(admin.ModelAdmin):
     list_display = ('name', 'system_user', 'owner')
@@ -16,5 +16,9 @@ class FlightAdmin(admin.ModelAdmin):
         PAXInline,
         ]
 
-#admin.site.register(Person, PersonAdmin)
+class OutageAdmin(admin.ModelAdmin):
+    pass
+
 admin.site.register(Flight, FlightAdmin)
+admin.site.register(Person, PersonAdmin)
+admin.site.register(Outage, OutageAdmin)

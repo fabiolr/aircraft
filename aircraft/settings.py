@@ -156,7 +156,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 )
 
 #ADMIN_TOOLS_MENU = 'aircraft.menu.CustomMenu'
-#ADMIN_TOOLS_INDEX_DASHBOARD = 'aircraft.dashboard.CustomIndexDashboard'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'aircraft.dashboard.CustomIndexDashboard'
 #ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'aircraft.dashboard.CustomAppIndexDashboard'
 
 # A sample logging configuration. The only tangible logging
