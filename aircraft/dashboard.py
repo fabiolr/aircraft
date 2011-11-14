@@ -73,14 +73,13 @@ class CustomAppIndexDashboard(AppIndexDashboard):
     def __init__(self, *args, **kwargs):
         AppIndexDashboard.__init__(self, *args, **kwargs)
 
-        # append a model list module and a recent actions module
+        self.children.append(modules.ModelList(self.app_title, self.models))
+
         self.children.append(modules.RecentActions(
             _('Recent Actions'),
             include_list=self.get_app_content_types(),
-            limit=5
+            limit=15
             ))
-
-        self.children.append(modules.ModelList(self.app_title, self.models))
 
     def init_with_context(self, context):
         """
