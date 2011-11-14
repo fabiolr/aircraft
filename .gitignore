@@ -1,4 +1,5 @@
 aircraft-env
 *.pyc
 *~
+aircraft/settings_local.py
 
