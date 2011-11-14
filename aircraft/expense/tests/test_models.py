@@ -16,7 +16,6 @@ from fixtures import fixtures_3_return_flights_in_3_months
 
 class TestDirectExpense(TestCase):
 
-    @dev
     def test_responsibility_is_shared_proportional_to_pax(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
