@@ -8,12 +8,11 @@ from django.core.exceptions import ValidationError
 from expense.models import (Person, Expense, Responsibility, Flight, Interpayment,
                             DirectExpense, VariableExpense, FixedExpense,
                             HourlyMantainance, ScheduleMantainance, EventualMantainance,
-                            calculate_interpayments
+                            calculate_interpayments, do_calculations, trigger_calculation
                             )
 
 from . import dev, set_ammount
 from fixtures import fixtures_3_return_flights_in_3_months
-
 
 class TestDirectExpense(TestCase):
 
@@ -806,6 +805,13 @@ class InterpaymentCalculationTest(TestCase):
                                          end=date(2011,11,1))
         ex.payment_set.create(ammount=1000, paid_by=o2)
 
+        do_calculations()
+
         self.assertEquals(Interpayment.objects.filter(paid=True).count(), 0)
         self.assertEquals(Interpayment.objects.filter(paid=False).count(), 1)
+
+        pay = Interpayment.objects.all()[0]
+        self.assertEquals(pay.by, o1)
+        self.assertEquals(pay.to, o2)
+        self.assertEquals(pay.ammount, 500)
         

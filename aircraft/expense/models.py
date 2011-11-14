@@ -128,7 +128,6 @@ class ExpenseCategory(models.Model):
         ordering = ('expense_type', 'name')
     
 class Expense(models.Model):
-    #ammount = models.FloatField(u"Valor", blank=False, null=False)
     date = models.DateField(u"Data do pagamento", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, verbose_name=u'Categoria', blank=True, null=True)
 
@@ -231,7 +230,6 @@ class Responsibility(models.Model):
 
 #signal
 def share_responsibility(sender, **kwargs):
-    import ipdb; ipdb.set_trace()
     if kwargs['instance'].ammount:
         kwargs['instance'].share()
 
@@ -437,7 +435,7 @@ def do_calculations(*args, **kwargs):
         pay.delete()
 
     for pay in calculate_interpayments():
-        Interpayment.objects.create(by=pay[0], to=pay[1], ammount=pay[2])
+        Interpayment.objects.create(by=pay[0], to=pay[1], ammount=pay[2], paid=False)
             
 models.signals.post_save.connect(trigger_calculation, sender=FixedExpense, dispatch_uid="interpayments_1")
 models.signals.post_save.connect(trigger_calculation, sender=Interpayment, dispatch_uid="interpayments_3")
