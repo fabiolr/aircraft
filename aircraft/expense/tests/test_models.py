@@ -6,9 +6,10 @@ from django.test import TestCase
 from django.core.exceptions import ValidationError
 
 from flight.models import Person, Flight, Outage
-from expense.models import Expense, Responsibility, DirectExpense, VariableExpense, FixedExpense
-from mantainance.models import HourlyMantainance, ScheduleMantainance, EventualMantainance
-from finance.models import Interpayment, calculate_interpayments, do_calculations, trigger_calculation
+from expense.models import (DirectExpense, VariableExpense, FixedExpense,
+                            HourlyMantainance, ScheduleMantainance, EventualMantainance)
+from finance.models import (Interpayment, Expense, Responsibility,
+                            calculate_interpayments, do_calculations, trigger_calculation)
 
 from . import dev, set_ammount
 from fixtures import fixtures_3_return_flights_in_3_months

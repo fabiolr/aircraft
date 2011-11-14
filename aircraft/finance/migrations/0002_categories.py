@@ -7,7 +7,7 @@ from django.db import models
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        create = orm['expense.expensecategory'].objects.create
+        create = orm['finance.expensecategory'].objects.create
 
         create(expense_type=1, name=u'Comissária')
         create(expense_type=1, name=u'Taxa aeroportuária')
@@ -33,6 +33,7 @@ class Migration(DataMigration):
         create(expense_type=3, name=u'Seguro Reta')
         create(expense_type=3, name=u'Taxas e Emolumentos')
         create(expense_type=3, name=u'Despachante')
+
 
 
     def backwards(self, orm):
@@ -76,61 +77,40 @@ class Migration(DataMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
-        'expense.directexpense': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'DirectExpense', '_ormbases': ['expense.Expense']},
-            'description': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'flight': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Flight']"})
-        },
-        'expense.expense': {
+        'finance.expense': {
             'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
-            'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
+            'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
             'date': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
-        'expense.expensecategory': {
+        'finance.expensecategory': {
             'Meta': {'ordering': "('expense_type', 'name')", 'object_name': 'ExpenseCategory'},
             'expense_type': ('django.db.models.fields.IntegerField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '32'})
         },
-        'expense.fixedexpense': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'FixedExpense', '_ormbases': ['expense.Expense']},
-            'end': ('django.db.models.fields.DateField', [], {}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'repeat': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'start': ('django.db.models.fields.DateField', [], {})
+        'finance.interpayment': {
+            'Meta': {'ordering': "('paid', '-date')", 'object_name': 'Interpayment'},
+            'ammount': ('django.db.models.fields.FloatField', [], {}),
+            'by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'transferences_made'", 'to': "orm['flight.Person']"}),
+            'date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'paid': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'to': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'transferences_received'", 'to': "orm['flight.Person']"})
         },
-        'expense.payment': {
+        'finance.payment': {
             'Meta': {'object_name': 'Payment'},
             'ammount': ('django.db.models.fields.FloatField', [], {}),
-            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Expense']"}),
+            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.Expense']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'paid_by': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Person']"})
         },
-        'expense.responsibility': {
+        'finance.responsibility': {
             'Meta': {'ordering': "[u'owner__name']", 'object_name': 'Responsibility'},
             'ammount': ('django.db.models.fields.FloatField', [], {}),
-            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Expense']"}),
+            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.Expense']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Person']"})
-        },
-        'expense.variableexpense': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'VariableExpense', '_ormbases': ['expense.Expense']},
-            'end': ('django.db.models.fields.DateField', [], {}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'start': ('django.db.models.fields.DateField', [], {})
-        },
-        'flight.flight': {
-            'Meta': {'ordering': "['-id']", 'object_name': 'Flight'},
-            'cycles': ('django.db.models.fields.IntegerField', [], {}),
-            'date': ('django.db.models.fields.DateField', [], {}),
-            'destiny': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
-            'end_hobbs': ('django.db.models.fields.FloatField', [], {}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'mantainance': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'origin': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
-            'start_hobbs': ('django.db.models.fields.FloatField', [], {})
         },
         'flight.person': {
             'Meta': {'object_name': 'Person'},
@@ -141,4 +121,4 @@ class Migration(DataMigration):
         }
     }
 
-    complete_apps = ['expense']
+    complete_apps = ['finance']

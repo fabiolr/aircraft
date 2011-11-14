@@ -2,7 +2,8 @@
 
 from django import forms
 
-from models import DirectExpense, VariableExpense, FixedExpense, ExpenseCategory
+from models import DirectExpense, VariableExpense, FixedExpense
+from finance.models import ExpenseCategory
 
 class DirectExpenseForm(forms.ModelForm):
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This file was generated with the customdashboard management command, it
 contains the two classes for the main dashboard and app index dashboard.
@@ -18,28 +19,50 @@ from admin_tools.utils import get_admin_site_name
 
 
 class CustomIndexDashboard(Dashboard):
-    """
-    Custom index dashboard for aircraft.
-    """
-    def init_with_context(self, context):
-        site_name = get_admin_site_name(context)
+    columns = 2
+    
+    #def init_with_context(self, context):
+    def __init__(self, **kwargs):
+        Dashboard.__init__(self, **kwargs)
+        #site_name = get_admin_site_name(context)
 
-        # append an app list module for "Applications"
-        self.children.append(modules.AppList(
-            _('Aircraft'),
-            models=('aircraft.flight.models.*',
-                    ),
-            exclude=('django.contrib.*',),
-        ))
+        self.children.append(modules.ModelList(
+            u'Avião', ('aircraft.flight.models.Flight',
+                       'aircraft.flight.models.Outage',
+                       ),
+            
+            ))
 
-        # append an app list module for "Administration"
-        self.children.append(modules.AppList(
-            _('Administration'),
-            models=('django.contrib.*',),
-        ))
+        self.children.append(modules.ModelList(
+            u'Despesas', ('aircraft.expense.models.DirectExpense',
+                          'aircraft.expense.models.VariableExpense',
+                          'aircraft.expense.models.FixedExpense',
+                          'aircraft.expense.models.HourlyMantainance',
+                          'aircraft.expense.models.ScheduleMantainance',
+                          'aircraft.expense.models.EventualMantainance',
+                          ),
+            
+            ))
+        
+        self.children.append(modules.ModelList(
+            u'Finanças', ('aircraft.finance.models.Interpayment',
+                          'aircraft.finance.models.Expense',
+                          ),
+            
+            ))
+        
+        self.children.append(modules.ModelList(
+            _('Administration'), ('django.contrib.auth.models.User',
+                                  'aircraft.flight.models.Person',
+                                  ),
+            
+            ))
 
-        # append a recent actions module
+
         self.children.append(modules.RecentActions(_('Recent Actions'), 15))
+
+        
+
 
 
 class CustomAppIndexDashboard(AppIndexDashboard):
@@ -47,21 +70,17 @@ class CustomAppIndexDashboard(AppIndexDashboard):
     Custom app index dashboard for aircraft.
     """
 
-    # we disable title because its redundant with the model list module
-    title = ''
-
     def __init__(self, *args, **kwargs):
         AppIndexDashboard.__init__(self, *args, **kwargs)
 
         # append a model list module and a recent actions module
-        self.children += [
-            modules.ModelList(self.app_title, self.models),
-            modules.RecentActions(
-                _('Recent Actions'),
-                include_list=self.get_app_content_types(),
-                limit=5
-            )
-        ]
+        self.children.append(modules.RecentActions(
+            _('Recent Actions'),
+            include_list=self.get_app_content_types(),
+            limit=5
+            ))
+
+        self.children.append(modules.ModelList(self.app_title, self.models))
 
     def init_with_context(self, context):
         """

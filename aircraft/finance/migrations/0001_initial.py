@@ -8,6 +8,40 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
+        # Adding model 'ExpenseCategory'
+        db.create_table('finance_expensecategory', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=32)),
+            ('expense_type', self.gf('django.db.models.fields.IntegerField')()),
+        ))
+        db.send_create_signal('finance', ['ExpenseCategory'])
+
+        # Adding model 'Expense'
+        db.create_table('finance_expense', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('date', self.gf('django.db.models.fields.DateField')()),
+            ('category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['finance.ExpenseCategory'], null=True, blank=True)),
+        ))
+        db.send_create_signal('finance', ['Expense'])
+
+        # Adding model 'Payment'
+        db.create_table('finance_payment', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('expense', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['finance.Expense'])),
+            ('paid_by', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['flight.Person'])),
+            ('ammount', self.gf('django.db.models.fields.FloatField')()),
+        ))
+        db.send_create_signal('finance', ['Payment'])
+
+        # Adding model 'Responsibility'
+        db.create_table('finance_responsibility', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('expense', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['finance.Expense'])),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['flight.Person'])),
+            ('ammount', self.gf('django.db.models.fields.FloatField')()),
+        ))
+        db.send_create_signal('finance', ['Responsibility'])
+
         # Adding model 'Interpayment'
         db.create_table('finance_interpayment', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -22,6 +56,18 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         
+        # Deleting model 'ExpenseCategory'
+        db.delete_table('finance_expensecategory')
+
+        # Deleting model 'Expense'
+        db.delete_table('finance_expense')
+
+        # Deleting model 'Payment'
+        db.delete_table('finance_payment')
+
+        # Deleting model 'Responsibility'
+        db.delete_table('finance_responsibility')
+
         # Deleting model 'Interpayment'
         db.delete_table('finance_interpayment')
 
@@ -63,6 +109,18 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
+        'finance.expense': {
+            'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
+            'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
+            'date': ('django.db.models.fields.DateField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
+        },
+        'finance.expensecategory': {
+            'Meta': {'ordering': "('expense_type', 'name')", 'object_name': 'ExpenseCategory'},
+            'expense_type': ('django.db.models.fields.IntegerField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '32'})
+        },
         'finance.interpayment': {
             'Meta': {'ordering': "('paid', '-date')", 'object_name': 'Interpayment'},
             'ammount': ('django.db.models.fields.FloatField', [], {}),
@@ -71,6 +129,20 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'paid': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'to': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'transferences_received'", 'to': "orm['flight.Person']"})
+        },
+        'finance.payment': {
+            'Meta': {'object_name': 'Payment'},
+            'ammount': ('django.db.models.fields.FloatField', [], {}),
+            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.Expense']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'paid_by': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Person']"})
+        },
+        'finance.responsibility': {
+            'Meta': {'ordering': "[u'owner__name']", 'object_name': 'Responsibility'},
+            'ammount': ('django.db.models.fields.FloatField', [], {}),
+            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.Expense']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Person']"})
         },
         'flight.person': {
             'Meta': {'object_name': 'Person'},

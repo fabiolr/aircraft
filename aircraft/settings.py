@@ -136,9 +136,8 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
 
     'aircraft.flight',
-    'aircraft.expense',
-    'aircraft.mantainance',
     'aircraft.finance',
+    'aircraft.expense',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -155,9 +154,9 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
 )
 
-#ADMIN_TOOLS_MENU = 'aircraft.menu.CustomMenu'
+ADMIN_TOOLS_MENU = 'aircraft.menu.CustomMenu'
 ADMIN_TOOLS_INDEX_DASHBOARD = 'aircraft.dashboard.CustomIndexDashboard'
-#ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'aircraft.dashboard.CustomAppIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'aircraft.dashboard.CustomAppIndexDashboard'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

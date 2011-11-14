@@ -2,13 +2,47 @@
 
 from django.contrib import admin
 
-from finance.models import Interpayment
-from expense.admin import PaymentInline
+from finance.models import Interpayment, Payment, Expense
 
+class PaymentInline(admin.TabularInline):
+    model = Payment
+    extra = 1
+    prepopulated_fields = {'ammount': ('ammount',) }
+
+    class Meta:
+        verbose_name = u"Pagamento"
+        verbose_name_plural = u"Pagamentos"
+
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ('ammount', 'date', 'type_name', 'category_name', 'child', 'responsibility')
+    list_filter = ('date', 'category')
+    search_fields = ('ammount',)
+    list_display_links = ()
+
+    inlines = [
+        PaymentInline,
+        ]
+
+    def category_name(self, expense):
+        try:
+            return expense.category.name
+        except AttributeError:
+            return '-'
+    category_name.short_description = 'Categoria'
+
+    def type_name(self, expense):
+        return self.expense(expense).__class__._meta.verbose_name
+
+    type_name.short_description = 'Tipo de despesa'
+    
 class InterpaymentAdmin(admin.ModelAdmin):
     list_display = ('date', 'by', 'to', 'ammount')
 
-admin.site.register(Interpayment, InterpaymentAdmin)
+try:
+    admin.site.register(Interpayment, InterpaymentAdmin)
+    admin.site.register(Expense, ExpenseAdmin)
+except:
+    pass
 
 
 
