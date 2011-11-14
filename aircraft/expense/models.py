@@ -4,6 +4,7 @@ import collections
 from datetime import timedelta
 
 from django.db import models
+from django.db.models import Sum
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 
@@ -24,11 +25,6 @@ OUTAGE_TYPES = (u'Mau uso',
                 )
 
 OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
-
-"""
-def validate(sender, **kwargs):
-    kwargs['instance'].validate()
-"""
 
 class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
@@ -61,13 +57,13 @@ class Flight(models.Model):
                 yield owner, ammount/owners.count()
 
         else:
-            pax_set = self.find_pax_set()
-            total = pax_set.aggregate(models.Sum('ammount'))['ammount__sum']
+            pax_set = self._find_pax_set()
+            total = pax_set.aggregate(Sum('ammount'))['ammount__sum']
 
             for pax in pax_set.all():
                 yield pax.owner, ammount * float(pax.ammount) / total
 
-    def find_pax_set(self):
+    def _find_pax_set(self):
         if self.pax_set.count() > 0:
             return self.pax_set
 
@@ -79,14 +75,23 @@ class Flight(models.Model):
         except IndexError:
             raise ValidationError("Não há nenhum PAX")
 
-        return last.find_pax_set()
+        return last._find_pax_set()
+
+    @property
+    def hobbs_desc(self):
+        return '%d-%d' % (self.start_hobbs, self.end_hobbs)
+    
+    @property
+    def number(self):
+        return '#%04d' % self.id
 
     def __unicode__(self):
-        return '%s %s %s %d-%d' % (self.date.strftime('%d/%m/%Y'), self.origin, self.destiny,
-                                   self.start_hobbs, self.end_hobbs)
+        return '%s %s %s %s %d-%d' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
+                                      self.destiny, self.start_hobbs, self.end_hobbs)
 
     class Meta:
         verbose_name = u"Vôo"
+        ordering = ['-id']
 
 class PAX(models.Model):
     flight = models.ForeignKey(Flight)
@@ -115,7 +120,7 @@ class ExpenseCategory(models.Model):
     expense_type = models.IntegerField(u"Tipo de despesa", choices=EXPENSE_TYPES.items())
 
     def __unicode__(self):
-        return '%s - %s' % (EXPENSE_TYPES[self.expense_type], self.name)
+        return '%s' % self.name
     
     class Meta:
         verbose_name = u"Categoria de despesas"
@@ -124,26 +129,15 @@ class ExpenseCategory(models.Model):
     
 class Expense(models.Model):
     ammount = models.FloatField(u"Valor", blank=False, null=False)
-    date = models.DateField(u"Data", blank=False, null=False)
-    category = models.ForeignKey(ExpenseCategory, blank=True, null=True)
-
-    def apply_share(self, responsibilities):
-        for resp in self.responsibility_set.all():
-            resp.delete()
-
-        """
-        if not responsibility:
-            owners = Person.objects.filter(owner=True)
-            for owner in owners:
-                responsibility[owner.id] = self.ammount/len(owners)
-        """
-
-        for owner, responsibility in responsibilities:
-            self.responsibility_set.create(ammount=responsibility, owner=owner)
+    date = models.DateField(u"Data do pagamento", blank=False, null=False)
+    category = models.ForeignKey(ExpenseCategory, verbose_name=u'Categoria', blank=True, null=True)
 
     def share_by_flights(self):
-        total_hobbs =  self.flights.aggregate(models.Sum('end_hobbs'))['end_hobbs__sum']
-        total_hobbs -= self.flights.aggregate(models.Sum('start_hobbs'))['start_hobbs__sum']
+        if self.flights.count() == 0:
+            return self.share_equally()
+        
+        total_hobbs =  self.flights.aggregate(Sum('end_hobbs'))['end_hobbs__sum']
+        total_hobbs -= self.flights.aggregate(Sum('start_hobbs'))['start_hobbs__sum']
         
         shares = collections.Counter()
 
@@ -165,8 +159,19 @@ class Expense(models.Model):
     def blame(self, owner):
         self.apply_share(((self.responsible, self.ammount),))
             
+    def apply_share(self, responsibilities):
+        for resp in self.responsibility_set.all():
+            resp.delete()
+
+        for owner, responsibility in responsibilities:
+            self.responsibility_set.create(ammount=responsibility, owner=owner)
+
+    @property
+    def responsibility(self):
+        return ' / '.join([ 'R$ %.2f %s' % (r.ammount, r.owner.name) for r in self.responsibility_set.all() ])
+
     def __unicode__(self):
-        return '%s %.2f' % (self.date, self.ammount)
+        return '%s %.2f' % (self.__class__._meta.verbose_name, self.ammount)
 
     def __repr__(self):
         return '%s %.2f' % (self.__class__.__name__, self.ammount)
@@ -177,14 +182,15 @@ class Expense(models.Model):
 
 class Payment(models.Model):
     expense = models.ForeignKey(Expense)
-    person = models.ForeignKey(Person)
-    ammount = models.FloatField()
+    paid_by = models.ForeignKey(Person, verbose_name=u"Pessoa")
+    ammount = models.FloatField(u"Valor pago")
 
     def __unicode__(self):
-        return '%s %.2f' % (self.person.name, self.ammount)
+        return '%s %.2f' % (self.paid_by.name, self.ammount)
     
     class Meta:
         verbose_name = u"Pagamento"
+        verbose_name_plural = u"Pago por"
 
 class Responsibility(models.Model):
     expense = models.ForeignKey(Expense)
@@ -204,12 +210,15 @@ def share_responsibility(sender, **kwargs):
         kwargs['instance'].share()
 
 class DirectExpense(Expense):
-    flight = models.ForeignKey(Flight) 
+    flight = models.ForeignKey(Flight, verbose_name=u"Vôo") 
     description = models.CharField(u"Descrição", max_length=255)
 
     def share(self):
         self.apply_share(self.flight.responsibilities(self.ammount))
-            
+
+    def __unicode__(self):
+        return unicode(self.flight)
+        
     class Meta:
         verbose_name = u"Despesa direta por operação"
         verbose_name_plural = u"Despesas diretas por operação"
@@ -228,7 +237,7 @@ class VariableExpense(Expense):
         return Flight.objects.filter(date__gte=self.start, date__lte=self.end)
         
     def __unicode__(self):
-        return self.ammount
+        return '%s - %s' % (self.start.strftime('%d/%m/%Y'), self.end.strftime('%d/%m/%Y'))
     
     class Meta:
         verbose_name = u"Despesa variável operacional"
@@ -245,6 +254,9 @@ class FixedExpense(Expense):
                                                         (2, u"Anualmente"),
                                                         ), default=0)
 
+    def __unicode__(self):
+        return '%s - %s' % (self.start.strftime('%d/%m/%Y'), self.end.strftime('%d/%m/%Y'))
+    
     def share(self):
         self.share_equally()
         
@@ -258,7 +270,7 @@ class HourlyMantainance(Expense):
     mantainance_date = models.DateField(u"Data de chegada na oficina")
     hobbs = models.FloatField(u"Hobbs de chegada na oficina")
     hours = models.IntegerField(u"Nº de horas da inspeção")
-    obs = models.CharField(u"Observações", max_length=255)
+    obs = models.CharField(u"Observações", max_length=255, blank=True, null=True)
 
     def share(self):
         self.share_by_flights()
@@ -268,6 +280,9 @@ class HourlyMantainance(Expense):
         return Flight.objects.filter(end_hobbs__gt=self.hobbs-self.hours) \
                              .exclude(start_hobbs__gte=self.hobbs)
 
+    def __unicode__(self):
+        return '%dH@%d, em %s' % (self.hours, self.hobbs, self.mantainance_date.strftime('%d/%m/%Y'))
+    
     class Meta:
         verbose_name = u"Manutenção por hora"
         verbose_name_plural = u"Manutenções por hora"
@@ -286,6 +301,9 @@ class ScheduleMantainance(Expense):
         start_date = self.mantainance_date - timedelta(self.period)
         return Flight.objects.filter(date__gte=start_date, date__lte=self.mantainance_date)
 
+    def __unicode__(self):
+        return '%d dias, em %s' % (self.period, self.mantainance_date.strftime('%d/%m/%Y'))
+
     class Meta:
         verbose_name = u"Manutenção calendárica"
         verbose_name_plural = u"Manutenções calendáricas"
@@ -295,10 +313,10 @@ models.signals.post_save.connect(share_responsibility, sender=ScheduleMantainanc
 class EventualMantainance(Expense):
     flight = models.ForeignKey(Flight, null=True)
     outage_type = models.CharField(u"Tipo", max_length=16, choices=OUTAGE_CHOICES)
-    discovery_date = models.DateField(u"Data de percepção da pane")
-    cause = models.CharField(u"Causa provável", max_length=255)
+    discovery_date = models.DateField(u"Data de percepção da pane", blank=True, null=True)
+    cause = models.CharField(u"Causa provável", max_length=255, blank=True, null=True)
     responsible = models.ForeignKey(Person, limit_choices_to={'owner': True},
-                                    verbose_name = "Responsável", null=True)
+                                    verbose_name = "Responsável", blank=True, null=True)
 
     def share(self):
         if self.responsible:
@@ -306,18 +324,76 @@ class EventualMantainance(Expense):
         else:
             self.share_equally()
 
+    def __unicode__(self):
+        if self.flight:
+            return '%s %s' % (self.flight, self.cause)
+        else:
+            return '%s %s' % (self.discovery_date.strftime('%d/%m/%Y'), self.cause)
+
     class Meta:
         verbose_name = u"Manutenção eventual"
         verbose_name_plural = u"Manuenções eventuais (Panes)"
 
 models.signals.post_save.connect(share_responsibility, sender=EventualMantainance, dispatch_uid="emantainance")
 
-class Payment(models.Model):
+class Interpayment(models.Model):
     date = models.DateField(u"Data")
     by = models.ForeignKey(Person, limit_choices_to={'owner': True},
-                           verbose_name=u"De", related_name='payments_made')
+                           verbose_name=u"De", related_name='transferences_made')
     to = models.ForeignKey(Person, limit_choices_to={'owner': True},
-                           verbose_name=u"Para", related_name='payments_received')
+                           verbose_name=u"Para", related_name='transferences_received')
     ammount = models.FloatField(u"Valor", blank=False, null=False)
+
+    def __unicode__(self):
+        return 'R$ %.2f %s - %s' % (self.ammount, self.by, self.to)
+
+    class Meta:
+        verbose_name = u"Interpagamento"
+
+
+def calculate_interpayments():
+
+    creditors = []
+    debtors = []
+
+    total = 0
+
+    for p in Person.objects.all():
+        p.balance = 0
+        p.balance += p.payment_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance -= p.responsibility_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance += p.transferences_made.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance -= p.transferences_received.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        
+        if p.balance > 0:
+            creditors.append(p)
+        elif p.balance < 0:
+            debtors.append(p)
+
+        total += p.balance
+
+    assert total == 0
+    
+    creditors = sorted(creditors, key=lambda p: p.balance)
+    debtors = sorted(debtors, key=lambda p: -p.balance)
+
+    result = []
+    
+    while creditors and debtors:
+        ammount = min(abs(debtors[0].balance), creditors[0].balance)
+
+        result.append((debtors[0], creditors[0], ammount))
+
+        creditors[0].balance -= ammount
+        debtors[0].balance += ammount
+
+        if round(creditors[0].balance) == 0:
+            creditors.pop(0)
+        if round(debtors[0].balance) == 0:
+            debtors.pop(0)
+
+    return tuple(result)
+            
+
 
 

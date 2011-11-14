@@ -5,9 +5,10 @@ from datetime import date
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from expense.models import (Person, Expense, Responsibility, Flight,
+from expense.models import (Person, Expense, Responsibility, Flight, Interpayment,
                             DirectExpense, VariableExpense, FixedExpense,
                             HourlyMantainance, ScheduleMantainance, EventualMantainance,
+                            calculate_interpayments
                             )
 
 from . import dev
@@ -347,6 +348,7 @@ class FixedExpenseTest(TestCase):
 class HourlyMantainanceTest(TestCase):
     
     fixtures = ['3_return_flights_in_3_months.json']
+
     
     def test_only_considers_desired_hobbs_interval(self):
         # Second flight
@@ -457,6 +459,24 @@ class HourlyMantainanceTest(TestCase):
         self.assertEquals(responsibility[1].owner.id, 2)
         self.assertEquals(responsibility[1].ammount, 2000)
 
+    def test_if_there_are_no_flights_accounts_shared_equally(self):
+        # Mostly during tests
+        expense = HourlyMantainance.objects.create(hobbs=1000,
+                                                   hours=100,
+                                                   date=date(2012, 12, 25),
+                                                   mantainance_date=date(2012,12,23),
+                                                   ammount=6000,
+                                                   )
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 2)
+        self.assertEquals(responsibility[0].owner.id, 1)
+        self.assertEquals(responsibility[0].ammount, 3000)
+        self.assertEquals(responsibility[1].owner.id, 2)
+        self.assertEquals(responsibility[1].ammount, 3000)
+
+        
 class ScheduleMantainanceTest(TestCase):
     fixtures = ['3_return_flights_in_3_months.json']
     
@@ -611,4 +631,136 @@ class EventualMantainanceTest(TestCase):
         self.assertEquals(responsibility[1].owner.id, 2)
         self.assertEquals(responsibility[1].ammount, 2500)
 
- 
+
+class InterpaymentCalculationTest(TestCase):
+
+    def test_no_interpayments_are_required_when_there_are_no_debts(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex.payment_set.create(ammount=500, paid_by=o1)
+        ex.payment_set.create(ammount=500, paid_by=o2)
+        ex.responsibility_set.create(ammount=500, owner=o1)
+        ex.responsibility_set.create(ammount=500, owner=o2)
+        
+        self.assertEquals(len(calculate_interpayments()), 0)
+
+    def test_one_owes_all_to_other(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex.payment_set.create(ammount=1000, paid_by=o2)
+        ex.responsibility_set.create(ammount=1000, owner=o1)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o1, o2, 1000))
+
+    def test_one_pays_for_both(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex.payment_set.create(ammount=1000, paid_by=o2)
+        ex.responsibility_set.create(ammount=500, owner=o1)
+        ex.responsibility_set.create(ammount=500, owner=o2)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o1, o2, 500))
+
+    def test_mixed_still_one_payment(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = Expense.objects.create(date=date(2011, 11, 13), ammount=1000)
+        ex.payment_set.create(ammount=900, paid_by=o1)
+        ex.payment_set.create(ammount=100, paid_by=o2)
+        ex.responsibility_set.create(ammount=300, owner=o1)
+        ex.responsibility_set.create(ammount=700, owner=o2)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o2, o1, 600))
+
+    def test_previous_interpayments_are_considered_in_calculation(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=1000)
+        ex.payment_set.create(ammount=900, paid_by=o1)
+        ex.payment_set.create(ammount=100, paid_by=o2)
+        ex.responsibility_set.create(ammount=300, owner=o1)
+        ex.responsibility_set.create(ammount=700, owner=o2)
+
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o2, to=o1, ammount=300)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o2, o1, 300))
+
+    def test_two_payments_involved(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=1000)
+        ex.payment_set.create(ammount=900, paid_by=o1)
+        ex.payment_set.create(ammount=100, paid_by=o2)
+        ex.responsibility_set.create(ammount=300, owner=o1)
+        ex.responsibility_set.create(ammount=700, owner=o2)
+
+        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=2000)
+        ex.payment_set.create(ammount=2000, paid_by=o2)
+        ex.responsibility_set.create(ammount=1000, owner=o1)
+        ex.responsibility_set.create(ammount=1000, owner=o2)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o1, o2, 400))
+        
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o1, to=o2, ammount=300)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o1, o2, 100))
+        
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o1, to=o2, ammount=100)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 0)
+        
+    def test_two_payments_involved(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+        p1 = Person.objects.create(name=u'Pilot')
+
+        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=1000)
+        ex.payment_set.create(ammount=900, paid_by=o1)
+        ex.payment_set.create(ammount=100, paid_by=o2)
+        ex.responsibility_set.create(ammount=300, owner=o1)
+        ex.responsibility_set.create(ammount=700, owner=o2)
+
+        ex = Expense.objects.create(date=date(2011, 11, 12), ammount=2000)
+        ex.payment_set.create(ammount=100, paid_by=p1)
+        ex.responsibility_set.create(ammount=50, owner=o1)
+        ex.responsibility_set.create(ammount=50, owner=o2)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 2)
+        self.assertTrue((o2, o1, 550) in payments)
+        self.assertTrue((o2, p1, 100) in payments)
+
+        # pilot is paid by o1 instead of 02
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o1, to=p1, ammount=100)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 1)
+        self.assertEquals(payments[0], (o2, o1, 650))
+        
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o2, to=o1, ammount=650)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 0)
+        
