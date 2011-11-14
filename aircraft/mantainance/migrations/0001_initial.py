@@ -8,14 +8,42 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Deleting field 'Expense.ammount'
-        db.delete_column('expense_expense', 'ammount')
+        # Adding model 'HourlyMantainance'
+        db.create_table('mantainance_hourlymantainance', (
+            ('expense_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['expense.Expense'], unique=True, primary_key=True)),
+            ('mantainance_date', self.gf('django.db.models.fields.DateField')()),
+            ('hobbs', self.gf('django.db.models.fields.FloatField')()),
+            ('hours', self.gf('django.db.models.fields.IntegerField')()),
+            ('obs', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+        ))
+        db.send_create_signal('mantainance', ['HourlyMantainance'])
+
+        # Adding model 'ScheduleMantainance'
+        db.create_table('mantainance_schedulemantainance', (
+            ('expense_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['expense.Expense'], unique=True, primary_key=True)),
+            ('mantainance_date', self.gf('django.db.models.fields.DateField')()),
+            ('period', self.gf('django.db.models.fields.IntegerField')()),
+        ))
+        db.send_create_signal('mantainance', ['ScheduleMantainance'])
+
+        # Adding model 'EventualMantainance'
+        db.create_table('mantainance_eventualmantainance', (
+            ('expense_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['expense.Expense'], unique=True, primary_key=True)),
+            ('outage', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['flight.Outage'])),
+        ))
+        db.send_create_signal('mantainance', ['EventualMantainance'])
 
 
     def backwards(self, orm):
         
-        # User chose to not deal with backwards NULL issues for 'Expense.ammount'
-        raise RuntimeError("Cannot reverse this migration. 'Expense.ammount' and its values cannot be restored.")
+        # Deleting model 'HourlyMantainance'
+        db.delete_table('mantainance_hourlymantainance')
+
+        # Deleting model 'ScheduleMantainance'
+        db.delete_table('mantainance_schedulemantainance')
+
+        # Deleting model 'EventualMantainance'
+        db.delete_table('mantainance_eventualmantainance')
 
 
     models = {
@@ -55,21 +83,6 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
-        'expense.directexpense': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'DirectExpense', '_ormbases': ['expense.Expense']},
-            'description': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'flight': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Flight']"})
-        },
-        'expense.eventualmantainance': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'EventualMantainance', '_ormbases': ['expense.Expense']},
-            'cause': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'discovery_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'flight': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Flight']", 'null': 'True'}),
-            'outage_type': ('django.db.models.fields.CharField', [], {'max_length': '16'}),
-            'responsible': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Person']", 'null': 'True', 'blank': 'True'})
-        },
         'expense.expense': {
             'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
             'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
@@ -82,14 +95,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '32'})
         },
-        'expense.fixedexpense': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'FixedExpense', '_ormbases': ['expense.Expense']},
-            'end': ('django.db.models.fields.DateField', [], {}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'repeat': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'start': ('django.db.models.fields.DateField', [], {})
-        },
-        'expense.flight': {
+        'flight.flight': {
             'Meta': {'ordering': "['-id']", 'object_name': 'Flight'},
             'cycles': ('django.db.models.fields.IntegerField', [], {}),
             'date': ('django.db.models.fields.DateField', [], {}),
@@ -100,7 +106,28 @@ class Migration(SchemaMigration):
             'origin': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
             'start_hobbs': ('django.db.models.fields.FloatField', [], {})
         },
-        'expense.hourlymantainance': {
+        'flight.outage': {
+            'Meta': {'object_name': 'Outage'},
+            'cause': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'discovery_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
+            'flight': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Flight']", 'null': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'outage_type': ('django.db.models.fields.CharField', [], {'max_length': '16'}),
+            'responsible': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Person']", 'null': 'True', 'blank': 'True'})
+        },
+        'flight.person': {
+            'Meta': {'object_name': 'Person'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'owner': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'system_user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
+        },
+        'mantainance.eventualmantainance': {
+            'Meta': {'ordering': "['-date']", 'object_name': 'EventualMantainance', '_ormbases': ['expense.Expense']},
+            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
+            'outage': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['flight.Outage']"})
+        },
+        'mantainance.hourlymantainance': {
             'Meta': {'ordering': "['-date']", 'object_name': 'HourlyMantainance', '_ormbases': ['expense.Expense']},
             'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
             'hobbs': ('django.db.models.fields.FloatField', [], {}),
@@ -108,55 +135,12 @@ class Migration(SchemaMigration):
             'mantainance_date': ('django.db.models.fields.DateField', [], {}),
             'obs': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'})
         },
-        'expense.interpayment': {
-            'Meta': {'ordering': "('paid', '-date')", 'object_name': 'Interpayment'},
-            'ammount': ('django.db.models.fields.FloatField', [], {}),
-            'by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'transferences_made'", 'to': "orm['expense.Person']"}),
-            'date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'paid': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'to': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'transferences_received'", 'to': "orm['expense.Person']"})
-        },
-        'expense.pax': {
-            'Meta': {'object_name': 'PAX'},
-            'ammount': ('django.db.models.fields.IntegerField', [], {}),
-            'flight': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Flight']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Person']"})
-        },
-        'expense.payment': {
-            'Meta': {'object_name': 'Payment'},
-            'ammount': ('django.db.models.fields.FloatField', [], {}),
-            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Expense']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'paid_by': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Person']"})
-        },
-        'expense.person': {
-            'Meta': {'object_name': 'Person'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'owner': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'system_user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
-        },
-        'expense.responsibility': {
-            'Meta': {'ordering': "[u'owner__name']", 'object_name': 'Responsibility'},
-            'ammount': ('django.db.models.fields.FloatField', [], {}),
-            'expense': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Expense']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['expense.Person']"})
-        },
-        'expense.schedulemantainance': {
+        'mantainance.schedulemantainance': {
             'Meta': {'ordering': "['-date']", 'object_name': 'ScheduleMantainance', '_ormbases': ['expense.Expense']},
             'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
             'mantainance_date': ('django.db.models.fields.DateField', [], {}),
             'period': ('django.db.models.fields.IntegerField', [], {})
-        },
-        'expense.variableexpense': {
-            'Meta': {'ordering': "['-date']", 'object_name': 'VariableExpense', '_ormbases': ['expense.Expense']},
-            'end': ('django.db.models.fields.DateField', [], {}),
-            'expense_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['expense.Expense']", 'unique': 'True', 'primary_key': 'True'}),
-            'start': ('django.db.models.fields.DateField', [], {})
         }
     }
 
-    complete_apps = ['expense']
+    complete_apps = ['mantainance']

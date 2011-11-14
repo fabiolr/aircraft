@@ -5,11 +5,10 @@ from datetime import date
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from expense.models import (Person, Expense, Responsibility, Flight, Interpayment,
-                            DirectExpense, VariableExpense, FixedExpense,
-                            HourlyMantainance, ScheduleMantainance, EventualMantainance,
-                            calculate_interpayments, do_calculations, trigger_calculation
-                            )
+from flight.models import Person, Flight, Outage
+from expense.models import Expense, Responsibility, DirectExpense, VariableExpense, FixedExpense
+from mantainance.models import HourlyMantainance, ScheduleMantainance, EventualMantainance
+from finance.models import Interpayment, calculate_interpayments, do_calculations, trigger_calculation
 
 from . import dev, set_ammount
 from fixtures import fixtures_3_return_flights_in_3_months
@@ -631,9 +630,12 @@ class EventualMantainanceTest(TestCase):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        expense = EventualMantainance.objects.create(discovery_date=date(2011, 12, 22),
+        outage = Outage.objects.create(discovery_date=date(2011, 12, 22),
+                                       responsible=owner1,
+                                       cause='Unknown')
+
+        expense = EventualMantainance.objects.create(outage=outage,
                                                      date=date(2011, 12, 22),
-                                                     responsible=owner1,
                                                      ammount=5000,
                                                      )
         set_ammount(expense, 5000)
@@ -648,7 +650,10 @@ class EventualMantainanceTest(TestCase):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-        expense = EventualMantainance.objects.create(discovery_date=date(2011, 12, 22),
+        outage = Outage.objects.create(discovery_date=date(2011, 12, 22),
+                                       cause='Unknown')
+        
+        expense = EventualMantainance.objects.create(outage=outage,
                                                      date=date(2011, 12, 22),
                                                      ammount=5000,
                                                      )

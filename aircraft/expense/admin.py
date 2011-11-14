@@ -3,22 +3,9 @@ from admin_tools.dashboard import Dashboard
 
 from forms import DirectExpenseForm, VariableExpenseForm, FixedExpenseForm
 
-from aircraft.expense.models import * #(Flight, Expense, ExpenseCategory, DirectExpense, VariableExpense, 
-                                      #FixedExpense, Responsibility, Payment, PAX)
+from aircraft.expense.models import (DirectExpense, VariableExpense, FixedExpense,
+                                     Expense, Payment, ExpenseCategory)
 
-class PersonAdmin(admin.ModelAdmin):
-    list_display = ('name', 'system_user', 'owner')
-
-# Flight
-
-class PAXInline(admin.TabularInline):
-    model = PAX
-    extra = 2
-    
-class FlightAdmin(admin.ModelAdmin):
-    inlines = [
-        PAXInline,
-        ]
 
 # Expenses
 
@@ -71,30 +58,11 @@ class FixedExpenseAdmin(ExpenseAdmin):
     list_filter = ('date', 'category')
     form = FixedExpenseForm
 
-#Mantainances
-
-class HourlyMantainanceAdmin(ExpenseAdmin):
-    exclude = ('category',)
-    list_filter = ('date',)
-
-class ScheduledMantainanceAdmin(ExpenseAdmin):
-    list_filter = ('date',)
-
-class EventualMantainanceAdmin(ExpenseAdmin):
-    list_filter = ('date', 'category')
-
-class InterpaymentAdmin(admin.ModelAdmin):
-    list_display = ('date', 'by', 'to', 'ammount')
-
-
-admin.site.register(Person, PersonAdmin)
-admin.site.register(Flight, FlightAdmin)
-admin.site.register(ExpenseCategory, ExpenseCategoryAdmin)
-admin.site.register(DirectExpense, DirectExpenseAdmin)
-admin.site.register(VariableExpense, VariableExpenseAdmin)
-admin.site.register(FixedExpense, FixedExpenseAdmin)
-admin.site.register(HourlyMantainance, HourlyMantainanceAdmin)
-admin.site.register(ScheduleMantainance, HourlyMantainanceAdmin)
-admin.site.register(EventualMantainance, HourlyMantainanceAdmin)
-admin.site.register(Expense, ExpenseAdmin)
-admin.site.register(Interpayment, InterpaymentAdmin)
+try:
+    admin.site.register(Expense, ExpenseAdmin)
+    admin.site.register(ExpenseCategory, ExpenseCategoryAdmin)
+    admin.site.register(DirectExpense, DirectExpenseAdmin)
+    admin.site.register(VariableExpense, VariableExpenseAdmin)
+    admin.site.register(FixedExpense, FixedExpenseAdmin)
+except:
+    pass

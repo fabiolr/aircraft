@@ -2,7 +2,7 @@
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': 'aircraft',                   # Or path to database file if using sqlite3.
         'USER': 'root',                       # Not used with sqlite3.
         'PASSWORD': '',                       # Not used with sqlite3.
@@ -28,7 +28,7 @@ NOSE_ARGS = [
              '--nocapture',
 #              '-a tags=dev',
               '--with-id',
-#              '--failed',
+              '--failed',
 #              '--processes=4',
     
 ]

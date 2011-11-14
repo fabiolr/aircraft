@@ -106,7 +106,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 
-    'expense.middleware.CalculatorMiddleware',
+    'finance.middleware.CalculatorMiddleware',
 )
 
 ROOT_URLCONF = 'aircraft.urls'
@@ -135,7 +135,10 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 
+    'aircraft.flight',
     'aircraft.expense',
+    'aircraft.mantainance',
+    'aircraft.finance',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
