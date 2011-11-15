@@ -94,7 +94,10 @@ class Expense(models.Model):
 
     @property
     def responsibility(self):
-        return ' / '.join([ 'R$ %.2f %s' % (r.ammount, r.owner.name) for r in self.responsibility_set.all() ])
+        if self.calculated:
+            return ' / '.join([ 'R$ %.2f %s' % (r.ammount, r.owner.name) for r in self.responsibility_set.all() ])
+        else:
+            return u'NÃO CALCULADA'
 
     def __unicode__(self):
         return '%s %.2f' % (self.__class__._meta.verbose_name, self.ammount)
