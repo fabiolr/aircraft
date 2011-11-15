@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import collections
+#from counter import Counter
+from collections import Counter
 
 from django.db import models
 from django.db.models import Sum
@@ -40,7 +41,7 @@ class Expense(models.Model):
         total_hobbs =  self.flights.aggregate(Sum('end_hobbs'))['end_hobbs__sum']
         total_hobbs -= self.flights.aggregate(Sum('start_hobbs'))['start_hobbs__sum']
         
-        shares = collections.Counter()
+        shares = Counter()
 
         for flight in self.flights:
             ammount = self.ammount * flight.hobbs / total_hobbs

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import collections
 from datetime import timedelta
 
 from django import core

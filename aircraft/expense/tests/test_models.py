@@ -263,7 +263,6 @@ class VariableExpenseTest(TestCase):
         expense = VariableExpense.objects.create(start=date(2011, 11, 1),
                                                  end=date(2011, 12, 15),
                                                  date=date(2011, 12, 15),
-                                                 ammount=800,
                                                  )
         set_ammount(expense, 800)
 

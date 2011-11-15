@@ -5,6 +5,7 @@ from django.db.models import Sum
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 
+
 OPERATIONAL_BASE = 'SBJD'
 
 OUTAGE_TYPES = (u'Mau uso',
@@ -16,6 +17,9 @@ OUTAGE_TYPES = (u'Mau uso',
 
 OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
 
+def validate(sender, **kwargs):
+    kwargs['instance'].validate()
+
 class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
     system_user = models.ForeignKey(User, verbose_name=u"usuário", blank=True, null=True)
@@ -25,8 +29,17 @@ class Person(models.Model):
     
     class Meta:
         verbose_name = u"Pessoa"
-    
+
+class FlightManager(models.Manager):
+    @property
+    def last(self):
+        try:
+            return self.all().order_by('-end_hobbs')[0]
+        except IndexError:
+            return None
+
 class Flight(models.Model):
+    number = models.IntegerField(u"#", editable=False)
     date = models.DateField(u"Data", blank=False, null=False)
     origin = models.CharField(u"Origem", max_length=4, blank=False, null=False)
     destiny = models.CharField(u"Destino", max_length=4, blank=False, null=False)
@@ -34,6 +47,33 @@ class Flight(models.Model):
     end_hobbs = models.FloatField(u"Hobbs Chegada", blank=False, null=False)
     cycles = models.IntegerField(u"Ciclos", blank=False, null=False)
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
+
+    objects = FlightManager()
+
+    def __init__(self, *args, **kwargs):
+        super(Flight, self).__init__(*args, **kwargs)
+        if not self.number:
+            try:
+                self.number = Flight.objects.last.number + 1
+            except AttributeError:
+                self.number = 1
+
+    def validate(self):
+        self.validate_hobbs()
+        self.validate_date()
+
+    def validate_hobbs(self):
+        if not self.start_hobbs and self.number > 1:
+            self.start_hobbs = Flight.objects.last.end_hobbs
+        if self.number > 1 and abs(self.start_hobbs - Flight.objects.last.end_hobbs) > 1e-4:
+            raise ValidationError(u"Hobbs inicial deste vôo deve ser igual ao final do último")
+        if self.start_hobbs >= self.end_hobbs:
+            raise ValidationError(u"Hobbs inicial deve ser menor que final")
+        if self.start_hobbs < 0:
+            raise ValidationError(u"Hobbs inicial deve ser maior que zero")
+    def validate_date(self):
+        if self.number > 1 and self.date < Flight.objects.last.date:
+            raise ValidationError(u"Data do vôo deve ser posterior ao último vôo")
 
     @property
     def hobbs(self):
@@ -70,17 +110,15 @@ class Flight(models.Model):
     def hobbs_desc(self):
         return '%d-%d' % (self.start_hobbs, self.end_hobbs)
     
-    @property
-    def number(self):
-        return '#%04d' % self.id
-
     def __unicode__(self):
-        return '%s %s %s %s %d-%d' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
-                                      self.destiny, self.start_hobbs, self.end_hobbs)
+        return '%04d %s %s %s %d-%d' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
+                                        self.destiny, self.start_hobbs, self.end_hobbs)
 
     class Meta:
         verbose_name = u"Vôo"
         ordering = ['-id']
+
+models.signals.pre_save.connect(validate, sender=Flight, dispatch_uid="validate_flight")
 
 class PAX(models.Model):
     flight = models.ForeignKey(Flight)
