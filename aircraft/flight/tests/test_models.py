@@ -74,6 +74,10 @@ class FlightTest(TestCase):
 
         self.assertAlmostEquals(flight3.start_hobbs, 12.5)
 
+        # it must be possible to save a previous flight withouth changing hobbs
+        flight2.mantainance = True
+        flight2.save()
+
     @dev
     def test_start_hobbs_must_be_smaller_than_end_hobbs(self):
         try:
