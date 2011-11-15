@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-#from counter import Counter
-from collections import Counter
+from counter import Counter
+#from collections import Counter
 
 from django.db import models
 from django.db.models import Sum
@@ -168,7 +168,7 @@ def calculate_interpayments():
 
     for p in Person.objects.all():
         p.balance = 0
-        p.balance += p.payment_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance += p.payment_set.filter(expense__calculated=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance -= p.responsibility_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance += p.transferences_made.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance -= p.transferences_received.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0

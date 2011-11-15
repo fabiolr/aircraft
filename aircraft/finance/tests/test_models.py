@@ -855,4 +855,28 @@ class InterpaymentCalculationTest(TestCase):
         self.assertEquals(pay.by, o1)
         self.assertEquals(pay.to, o2)
         self.assertEquals(pay.ammount, 500)
+
+    @dev
+    def test_non_calculated_expenses_are_ignored_on_interpayments_calculations(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        flight = Flight.objects.create(date = date(2011, 11, 12),
+                                       origin='SBJD',
+                                       destiny='AEIO',
+                                       start_hobbs=122,
+                                       end_hobbs=130,
+                                       cycles=3,
+                                       )
         
+        ex = DirectExpense.objects.create(date=date(2011, 11, 12),
+                                          flight=flight,
+                                          )
+        ex.payment_set.create(ammount=500, paid_by=o1)
+
+        assert ex.calculated == False
+        
+        do_calculations()
+
+        self.assertEquals(Interpayment.objects.all().count(), 0)
+ 
