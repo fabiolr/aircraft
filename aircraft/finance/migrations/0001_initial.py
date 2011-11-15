@@ -21,6 +21,7 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('date', self.gf('django.db.models.fields.DateField')()),
             ('category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['finance.ExpenseCategory'], null=True, blank=True)),
+            ('calculated', self.gf('django.db.models.fields.BooleanField')(default=True)),
         ))
         db.send_create_signal('finance', ['Expense'])
 
@@ -111,6 +112,7 @@ class Migration(SchemaMigration):
         },
         'finance.expense': {
             'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
+            'calculated': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
             'date': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})

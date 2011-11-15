@@ -35,7 +35,6 @@ class Migration(DataMigration):
         create(expense_type=3, name=u'Despachante')
 
 
-
     def backwards(self, orm):
         "Write your backwards methods here."
 
@@ -79,6 +78,7 @@ class Migration(DataMigration):
         },
         'finance.expense': {
             'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
+            'calculated': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
             'date': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})

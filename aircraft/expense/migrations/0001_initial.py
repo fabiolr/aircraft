@@ -157,6 +157,7 @@ class Migration(SchemaMigration):
         },
         'finance.expense': {
             'Meta': {'ordering': "['-date']", 'object_name': 'Expense'},
+            'calculated': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['finance.ExpenseCategory']", 'null': 'True', 'blank': 'True'}),
             'date': ('django.db.models.fields.DateField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
@@ -168,13 +169,14 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '32'})
         },
         'flight.flight': {
-            'Meta': {'ordering': "['-id']", 'object_name': 'Flight'},
+            'Meta': {'ordering': "['-number']", 'object_name': 'Flight'},
             'cycles': ('django.db.models.fields.IntegerField', [], {}),
             'date': ('django.db.models.fields.DateField', [], {}),
             'destiny': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
             'end_hobbs': ('django.db.models.fields.FloatField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'mantainance': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'number': ('django.db.models.fields.IntegerField', [], {}),
             'origin': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
             'start_hobbs': ('django.db.models.fields.FloatField', [], {})
         },
