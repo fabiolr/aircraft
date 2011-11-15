@@ -76,6 +76,8 @@ class Flight(models.Model):
         if self.number > 1 and self.date < Flight.objects.last.date:
             raise ValidationError(u"Data do vôo deve ser posterior ao último vôo")
     def validate_origin(self):
+        if not self.origin and self.number > 1:
+            self.origin = Flight.objects.last.destiny
         if self.number > 1 and self.origin != Flight.objects.last.destiny:
             raise ValidationError(u"Vôo deve partir do último local de destino")
 

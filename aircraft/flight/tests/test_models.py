@@ -126,13 +126,19 @@ class FlightTest(TestCase):
         else:
             self.fail()
 
-        Flight.objects.create(start_hobbs=5,
-                              end_hobbs=6,
-                              origin='DCBA',
-                              destiny='AEIO',
+        flight = Flight.objects.create(start_hobbs=5,
+                                       end_hobbs=6,
+                                       destiny='AEIO',
+                                       cycles=1,
+                                       date=date(2011, 11, 16))
+        self.assertEquals(flight.origin, 'DCBA')
+
+        Flight.objects.create(start_hobbs=6,
+                              end_hobbs=7,
+                              origin='AEIO',
+                              destiny='AEIU',
                               cycles=1,
                               date=date(2011, 11, 16))
-
     @dev
     def test_date_of_one_flight_must_not_be_before_previous_flight(self):
         Flight.objects.create(start_hobbs=0,
