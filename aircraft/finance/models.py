@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import collections
+from counter import Counter
+#from collections import Counter
 
 from django.db import models
 from django.db.models import Sum
@@ -28,6 +29,7 @@ class ExpenseCategory(models.Model):
 class Expense(models.Model):
     date = models.DateField(u"Data do pagamento", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, verbose_name=u'Categoria', blank=True, null=True)
+    calculated = models.BooleanField(u"Divisão OK", editable=False, default=True)
 
     @property
     def ammount(self):
@@ -40,13 +42,20 @@ class Expense(models.Model):
         total_hobbs =  self.flights.aggregate(Sum('end_hobbs'))['end_hobbs__sum']
         total_hobbs -= self.flights.aggregate(Sum('start_hobbs'))['start_hobbs__sum']
         
-        shares = collections.Counter()
+        shares = Counter()
 
         for flight in self.flights:
             ammount = self.ammount * flight.hobbs / total_hobbs
             
+            calculated = False
             for owner, share in flight.responsibilities(ammount):
+                calculated = True
                 shares[owner.id] += share
+
+            if not calculated:
+                self.calculated = False
+                self.save()
+                return
 
         shares = [ (Person.objects.get(id=item[0]), item[1]) for item in shares.items() ]
         
@@ -67,6 +76,10 @@ class Expense(models.Model):
         for owner, responsibility in responsibilities:
             self.responsibility_set.create(ammount=responsibility, owner=owner)
 
+        if not self.calculated:
+            self.calculated = True
+            self.save()
+
     def child(self):
         if self.__class__ is not Expense:
             return self
@@ -81,7 +94,10 @@ class Expense(models.Model):
 
     @property
     def responsibility(self):
-        return ' / '.join([ 'R$ %.2f %s' % (r.ammount, r.owner.name) for r in self.responsibility_set.all() ])
+        if self.calculated:
+            return ' / '.join([ 'R$ %.2f %s' % (r.ammount, r.owner.name) for r in self.responsibility_set.all() ])
+        else:
+            return u'NÃO CALCULADA'
 
     def __unicode__(self):
         return '%s %.2f' % (self.__class__._meta.verbose_name, self.ammount)
@@ -98,6 +114,7 @@ class Payment(models.Model):
     expense = models.ForeignKey(Expense)
     paid_by = models.ForeignKey(Person, verbose_name=u"Pessoa")
     ammount = models.FloatField(u"Valor pago")
+    
 
     def __unicode__(self):
         return '%s %.2f' % (self.paid_by.name, self.ammount)
@@ -154,7 +171,7 @@ def calculate_interpayments():
 
     for p in Person.objects.all():
         p.balance = 0
-        p.balance += p.payment_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        p.balance += p.payment_set.filter(expense__calculated=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance -= p.responsibility_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance += p.transferences_made.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
         p.balance -= p.transferences_received.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0

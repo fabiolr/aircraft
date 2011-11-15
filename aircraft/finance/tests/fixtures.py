@@ -1,3 +1,4 @@
+from datetime import date
 from expense.models import Person, Flight
 
 def fixtures_3_return_flights_in_3_months():
@@ -9,7 +10,7 @@ def fixtures_3_return_flights_in_3_months():
             destiny = "ABCD", 
             start_hobbs = 100.0, 
             mantainance = False, 
-            date = "2011-10-12", 
+            date = date(2011, 10, 12), 
             cycles = 3, 
             end_hobbs = 110.0
         )
@@ -20,7 +21,7 @@ def fixtures_3_return_flights_in_3_months():
             destiny = "SBJD", 
             start_hobbs = 110.0, 
             mantainance = False, 
-            date = "2011-10-13", 
+            date = date(2011, 10, 13), 
             cycles = 3, 
             end_hobbs = 120.0
         )
@@ -30,7 +31,7 @@ def fixtures_3_return_flights_in_3_months():
             destiny = "BCDE", 
             start_hobbs = 120.0, 
             mantainance = False, 
-            date = "2011-11-12", 
+            date = date(2011, 11, 12), 
             cycles = 3, 
             end_hobbs = 130.0
         )
@@ -41,7 +42,7 @@ def fixtures_3_return_flights_in_3_months():
             destiny = "SBJD", 
             start_hobbs = 130.0, 
             mantainance = False, 
-            date = "2011-11-13", 
+            date = date(2011, 11, 13), 
             cycles = 3, 
             end_hobbs = 140.0
         )
@@ -51,7 +52,7 @@ def fixtures_3_return_flights_in_3_months():
             destiny = "CDEF", 
             start_hobbs = 140.0, 
             mantainance = False, 
-            date = "2011-12-12", 
+            date = date(2011, 12, 12), 
             cycles = 3, 
             end_hobbs = 170.0
         )
@@ -63,7 +64,7 @@ def fixtures_3_return_flights_in_3_months():
             destiny = "SBJD", 
             start_hobbs = 170.0, 
             mantainance = False, 
-            date = "2011-12-13", 
+            date = date(2011, 12, 13), 
             cycles = 3, 
             end_hobbs = 200.0
         )
@@ -72,7 +73,7 @@ def fixtures_3_return_flights_in_3_months():
             origin = "SBJD", 
             destiny = "MANT", 
             start_hobbs = 200.0, 
-            date = "2011-12-20", 
+            date = date(2011, 12, 20), 
             cycles = 3, 
             end_hobbs = 202.0,
 	    mantainance = True
@@ -82,7 +83,7 @@ def fixtures_3_return_flights_in_3_months():
             origin = "MANT", 
             destiny = "SBJD", 
             start_hobbs = 202.0, 
-            date = "2011-12-20", 
+            date = date(2011, 12, 20), 
             cycles = 3, 
             end_hobbs = 204.0,
 	    mantainance = True

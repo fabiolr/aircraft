@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import collections
 from datetime import timedelta
 
 from django import core
@@ -21,7 +20,14 @@ class DirectExpense(Expense):
     description = models.CharField(u"Descrição", max_length=255)
 
     def share(self):
-        self.apply_share(self.flight.responsibilities(self.ammount))
+        try:
+            self.apply_share(self.flight.responsibilities(self.ammount))
+        except ValidationError:
+            if self.calculated:
+                self.calculated = False
+                self.save() 
+                # signal will be triggered again, responsibilities calculated twice
+                # cruel world...
 
     def __unicode__(self):
         return unicode(self.flight)
