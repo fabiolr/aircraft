@@ -40,12 +40,12 @@ class FlightManager(models.Manager):
 
 class Flight(models.Model):
     number = models.IntegerField(u"#", editable=False)
-    date = models.DateField(u"Data", blank=False, null=False)
-    origin = models.CharField(u"Origem", max_length=4, blank=False, null=False)
-    destiny = models.CharField(u"Destino", max_length=4, blank=False, null=False)
-    start_hobbs = models.FloatField(u"Hobbs Saída", blank=False, null=False)
-    end_hobbs = models.FloatField(u"Hobbs Chegada", blank=False, null=False)
-    cycles = models.IntegerField(u"Ciclos", blank=False, null=False)
+    date = models.DateField(u"Data")
+    origin = models.CharField(u"Origem", max_length=4)
+    destiny = models.CharField(u"Destino", max_length=4)
+    start_hobbs = models.FloatField(u"Hobbs Saída")
+    end_hobbs = models.FloatField(u"Hobbs Chegada")
+    cycles = models.IntegerField(u"Ciclos")
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
 
     objects = FlightManager()
@@ -59,10 +59,11 @@ class Flight(models.Model):
                 self.number = 1
 
     def validate(self):
-        self.validate_hobbs()
+        self.validate_start_hobbs()
         self.validate_date()
+        self.validate_origin()
 
-    def validate_hobbs(self):
+    def validate_start_hobbs(self):
         if not self.start_hobbs and self.number > 1:
             self.start_hobbs = Flight.objects.last.end_hobbs
         if self.number > 1 and abs(self.start_hobbs - Flight.objects.last.end_hobbs) > 1e-4:
@@ -74,6 +75,9 @@ class Flight(models.Model):
     def validate_date(self):
         if self.number > 1 and self.date < Flight.objects.last.date:
             raise ValidationError(u"Data do vôo deve ser posterior ao último vôo")
+    def validate_origin(self):
+        if self.number > 1 and self.origin != Flight.objects.last.destiny:
+            raise ValidationError(u"Vôo deve partir do último local de destino")
 
     @property
     def hobbs(self):
@@ -87,6 +91,9 @@ class Flight(models.Model):
 
         else:
             pax_set = self._find_pax_set()
+            if not pax_set:
+                raise ValidationError(u'Não há PAX')
+
             total = pax_set.aggregate(Sum('ammount'))['ammount__sum']
 
             for pax in pax_set.all():
@@ -96,27 +103,45 @@ class Flight(models.Model):
         if self.pax_set.count() > 0:
             return self.pax_set
 
+        for flight in self.consecutive_flights():
+            if flight.pax_set.count() > 0:
+                return flight.pax_set
+        return None
+
+    def consecutive_flights(self):
+        start = self._first_flight()
+        end = self._last_flight()
+        return Flight.objects.filter(number__gte=start.number,
+                                     number__lte=end.number, 
+                                     mantainance=False).order_by('number')
+        
+    def _first_flight(self):
         if self.origin == OPERATIONAL_BASE:
-            raise ValidationError("Não há nenhum PAX")
-
+            return self
         try:
-            last = Flight.objects.filter(start_hobbs__lt = self.start_hobbs).order_by('-start_hobbs')[0]
+            return Flight.objects.filter(number__lt=self.number, origin=OPERATIONAL_BASE).order_by('-number')[0]
         except IndexError:
-            raise ValidationError("Não há nenhum PAX")
+            return self
 
-        return last._find_pax_set()
-
+    def _last_flight(self):
+        if self.destiny == OPERATIONAL_BASE:
+            return self
+        try:
+            return Flight.objects.filter(number__gt=self.number, destiny=OPERATIONAL_BASE).order_by('number')[0]
+        except IndexError:
+            return self
+        
     @property
     def hobbs_desc(self):
         return '%d-%d' % (self.start_hobbs, self.end_hobbs)
     
     def __unicode__(self):
-        return '%04d %s %s %s %d-%d' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
-                                        self.destiny, self.start_hobbs, self.end_hobbs)
+        return '#%04d %s %s %s %.1f-%.1f' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
+                                             self.destiny, self.start_hobbs, self.end_hobbs)
 
     class Meta:
         verbose_name = u"Vôo"
-        ordering = ['-id']
+        ordering = ['-number']
 
 models.signals.pre_save.connect(validate, sender=Flight, dispatch_uid="validate_flight")
 
@@ -126,8 +151,9 @@ class PAX(models.Model):
     ammount = models.IntegerField()
 
     def propagate_changes(self):
-        for expense in self.flight.directexpense_set.all():
-            expense.save()
+        for flight in self.flight.consecutive_flights():
+            for expense in flight.directexpense_set.all():
+                expense.save()
 
     def __unicode__(self):
         return '%s %.2f' % (self.owner.name, self.ammount)

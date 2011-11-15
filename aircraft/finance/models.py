@@ -29,6 +29,7 @@ class ExpenseCategory(models.Model):
 class Expense(models.Model):
     date = models.DateField(u"Data do pagamento", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, verbose_name=u'Categoria', blank=True, null=True)
+    calculated = models.BooleanField(u"Divisão OK", editable=False, default=True)
 
     @property
     def ammount(self):
@@ -46,8 +47,15 @@ class Expense(models.Model):
         for flight in self.flights:
             ammount = self.ammount * flight.hobbs / total_hobbs
             
+            calculated = False
             for owner, share in flight.responsibilities(ammount):
+                calculated = True
                 shares[owner.id] += share
+
+            if not calculated:
+                self.calculated = False
+                self.save()
+                return
 
         shares = [ (Person.objects.get(id=item[0]), item[1]) for item in shares.items() ]
         
@@ -67,6 +75,10 @@ class Expense(models.Model):
 
         for owner, responsibility in responsibilities:
             self.responsibility_set.create(ammount=responsibility, owner=owner)
+
+        if not self.calculated:
+            self.calculated = True
+            self.save()
 
     def child(self):
         if self.__class__ is not Expense:
@@ -99,6 +111,7 @@ class Payment(models.Model):
     expense = models.ForeignKey(Expense)
     paid_by = models.ForeignKey(Person, verbose_name=u"Pessoa")
     ammount = models.FloatField(u"Valor pago")
+    
 
     def __unicode__(self):
         return '%s %.2f' % (self.paid_by.name, self.ammount)

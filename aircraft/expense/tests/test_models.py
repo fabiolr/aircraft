@@ -167,26 +167,63 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[0].ammount, 900)
         self.assertEquals(responsibility[1].ammount, 1500)
 
-        try:
-            flight4 = Flight.objects.create(date = date(2011, 11, 12),
-                                            origin='SBJD',
-                                            destiny='AEIO',
-                                            start_hobbs=122,
-                                            end_hobbs=130,
-                                            cycles=3,
-                                            )
+    def test_flight_departing_base_with_no_pax_takes_responsibilities_from_next_flight(self):
+        owner1 = Person.objects.create(name=u'Owner 1', owner=True)
+        owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
-            
-            expense = DirectExpense.objects.create(date=date(2011, 11, 12),
-                                                   flight=flight4,
-                                                   ammount=1600,
-                                                   )
-            set_ammount(expense, 1600)
+        flight = Flight.objects.create(date = date(2011, 11, 12),
+                                       origin='SBJD',
+                                       destiny='AEIO',
+                                       start_hobbs=122,
+                                       end_hobbs=130,
+                                       cycles=3,
+                                       )
+        
+        expense = DirectExpense.objects.create(date=date(2011, 11, 12),
+                                               flight=flight,
+                                               )
 
-        except ValidationError:
-            pass
-        else:
-            self.fail("Flight departing base must have either pax or mantainance")
+        set_ammount(expense, 1600)
+
+        self.assertTrue(not DirectExpense.objects.get(id=expense.id).calculated)
+        responsibility = expense.responsibility_set.all()
+        self.assertEquals(len(responsibility), 0)
+
+        flight2 = Flight.objects.create(date = date(2011, 11, 12),
+                                        origin='AEIO',
+                                        destiny='ABCD',
+                                        start_hobbs=130,
+                                        end_hobbs=131,
+                                        cycles=3,
+                                        )
+        
+        self.assertTrue(not DirectExpense.objects.get(id=expense.id).calculated)
+        responsibility = expense.responsibility_set.all()
+        self.assertEquals(len(responsibility), 0)
+
+        flight3 = Flight.objects.create(date = date(2011, 11, 12),
+                                        origin='ABCD',
+                                        destiny='SBJD',
+                                        start_hobbs=131,
+                                        end_hobbs=132,
+                                        cycles=3,
+                                        )
+
+        pax1 = flight3.pax_set.create(owner=owner1,
+                                      ammount=3)
+
+        pax2 = flight3.pax_set.create(owner=owner2,
+                                      ammount=5)
+
+        self.assertTrue(DirectExpense.objects.get(id=expense.id).calculated)
+        responsibility = expense.responsibility_set.all()
+        self.assertEquals(len(responsibility), 2)
+
+        self.assertEquals(responsibility[0].owner, owner1)
+        self.assertEquals(responsibility[1].owner, owner2)
+        self.assertEquals(responsibility[0].ammount, 600)
+        self.assertEquals(responsibility[1].ammount, 1000)
+        
 
 
 

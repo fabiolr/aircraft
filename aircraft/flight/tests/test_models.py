@@ -107,6 +107,33 @@ class FlightTest(TestCase):
             self.fail()
 
     @dev
+    def test_flight_must_depart_from_previous_flight_destination(self):
+        Flight.objects.create(start_hobbs=0,
+                              end_hobbs=5,
+                              origin='ABCD',
+                              destiny='DCBA',
+                              cycles=1,
+                              date=date(2011, 11, 15))
+        try:
+            Flight.objects.create(start_hobbs=5,
+                                  end_hobbs=6,
+                                  origin='ABCD',
+                                  destiny='DCBA',
+                                  cycles=1,
+                                  date=date(2011, 11, 16))
+        except ValidationError:
+            pass
+        else:
+            self.fail()
+
+        Flight.objects.create(start_hobbs=5,
+                              end_hobbs=6,
+                              origin='DCBA',
+                              destiny='AEIO',
+                              cycles=1,
+                              date=date(2011, 11, 16))
+
+    @dev
     def test_date_of_one_flight_must_not_be_before_previous_flight(self):
         Flight.objects.create(start_hobbs=0,
                               end_hobbs=5,
@@ -121,3 +148,4 @@ class FlightTest(TestCase):
             pass
         else:
             self.fail()
+
