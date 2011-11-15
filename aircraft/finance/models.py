@@ -154,6 +154,8 @@ class Interpayment(models.Model):
     ammount = models.FloatField(u"Valor", blank=False, null=False)
     paid = models.BooleanField(u"Pago", blank=True, default=True)
 
+    triggered = False
+
     def __unicode__(self):
         return 'R$ %.2f %s - %s' % (self.ammount, self.by, self.to)
 
@@ -205,16 +207,14 @@ def calculate_interpayments():
 
     return tuple(result)
 
-calculation = { 'triggered': True }
-
 def trigger_calculation(*args, **kwargs):
-    calculation['triggered'] = True
+    Interpayment.triggered = True
 
 def do_calculations(*args, **kwargs):
-    if not calculation['triggered']:
+    if not Interpayment.triggered:
         return
 
-    calculation['triggered'] = False
+    Interpayment.triggered = False
     for pay in Interpayment.objects.filter(paid=False):
         pay.delete()
 
