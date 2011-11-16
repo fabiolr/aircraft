@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from datetime import date, timedelta
+
 from django import forms
 
 from models import DirectExpense, VariableExpense, FixedExpense
@@ -13,7 +15,12 @@ class DirectExpenseForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(DirectExpenseForm, self).__init__(*args, **kwargs)
-        self.fields['flight'].queryset = Flight.objects.all() #TODO
+        if self.instance.date:
+            fdate = self.instance.date
+        else:
+            fdate = date.today()
+        self.fields['flight'].queryset = Flight.objects.filter(date__gte=fdate-timedelta(7),
+                                                               date__lte=fdate+timedelta(2))
                                     
     class Meta:
         model = DirectExpense
