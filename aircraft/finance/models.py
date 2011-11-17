@@ -185,24 +185,24 @@ def calculate_interpayments():
 
         total += person.balance
 
-    assert total == 0
-    
-    creditors = sorted(creditors, key=lambda p: p.balance)
-    debtors = sorted(debtors, key=lambda p: -p.balance)
+    assert round(total, 2) == 0
+
+    creditors = sorted(creditors, key=lambda p: -p.balance)
+    debtors = sorted(debtors, key=lambda p: p.balance)
 
     result = []
     
     while creditors and debtors:
         ammount = min(abs(debtors[0].balance), creditors[0].balance)
 
-        result.append((debtors[0], creditors[0], ammount))
+        result.append((debtors[0], creditors[0], round(ammount, 2)))
 
         creditors[0].balance -= ammount
         debtors[0].balance += ammount
 
-        if round(creditors[0].balance) == 0:
+        if round(creditors[0].balance, 2) == 0:
             creditors.pop(0)
-        if round(debtors[0].balance) == 0:
+        if round(debtors[0].balance, 2) == 0:
             debtors.pop(0)
 
     return tuple(result)

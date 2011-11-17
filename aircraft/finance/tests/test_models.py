@@ -879,4 +879,40 @@ class InterpaymentCalculationTest(TestCase):
         do_calculations()
 
         self.assertEquals(Interpayment.objects.all().count(), 0)
+
+    def test_cents_and_float_precision(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+        p1 = Person.objects.create(name=u'Pilot')
+
+        ex = Expense.objects.create(date=date(2011, 11, 12))
+        ex.payment_set.create(ammount=900, paid_by=o1)
+        ex.payment_set.create(ammount=100, paid_by=o2)
+        ex.responsibility_set.create(ammount=300, owner=o1)
+        ex.responsibility_set.create(ammount=700, owner=o2)
+
+        ex = Expense.objects.create(date=date(2011, 11, 12))
+        ex.payment_set.create(ammount=100.01, paid_by=p1)
+        ex.responsibility_set.create(ammount=50, owner=o1)
+        ex.responsibility_set.create(ammount=50.01, owner=o2)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 2)
+        self.assertTrue((o2, o1, 550) in payments)
+        self.assertTrue((o2, p1, 100.01) in payments)
+
+        # pilot is paid by o1 instead of 02
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o1, to=p1, ammount=100)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 2)
+        self.assertTrue((o2, o1, 650) in payments)
+        self.assertTrue((o2, p1, .01) in payments)
+
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o2, to=o1, ammount=650)
+        Interpayment.objects.create(date=date(2011, 11, 13), by=o2, to=p1, ammount=.01)
+
+        payments = calculate_interpayments()
+        self.assertEquals(len(payments), 0)
+
  
