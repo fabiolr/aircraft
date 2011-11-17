@@ -171,19 +171,19 @@ def calculate_interpayments():
 
     total = 0
 
-    for p in Person.objects.all():
-        p.balance = 0
-        p.balance += p.payment_set.filter(expense__calculated=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
-        p.balance -= p.responsibility_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
-        p.balance += p.transferences_made.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
-        p.balance -= p.transferences_received.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
+    for person in Person.objects.all():
+        person.balance = 0
+        person.balance += person.payment_set.filter(expense__calculated=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
+        person.balance -= person.responsibility_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
+        person.balance += person.transferences_made.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
+        person.balance -= person.transferences_received.filter(paid=True).aggregate(Sum('ammount'))['ammount__sum'] or 0
         
-        if p.balance > 0:
-            creditors.append(p)
-        elif p.balance < 0:
-            debtors.append(p)
+        if person.balance > 0:
+            creditors.append(person)
+        elif person.balance < 0:
+            debtors.append(person)
 
-        total += p.balance
+        total += person.balance
 
     assert total == 0
     
