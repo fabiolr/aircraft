@@ -157,7 +157,7 @@ class Interpayment(models.Model):
     triggered = False
 
     def __unicode__(self):
-        return 'R$ %.2f %s - %s' % (self.ammount, self.by, self.to)
+        return 'R$ %.2f %s - %s' % (self.ammount, unicode(self.by), unicode(self.to))
 
     class Meta:
         verbose_name = u"Interpagamento"
