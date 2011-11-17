@@ -147,9 +147,9 @@ class Responsibility(models.Model):
 
 class Interpayment(models.Model):
     date = models.DateField(u"Data", null=True)
-    by = models.ForeignKey(Person, limit_choices_to={'owner': True},
+    by = models.ForeignKey(Person,
                            verbose_name=u"De", related_name='transferences_made')
-    to = models.ForeignKey(Person, limit_choices_to={'owner': True},
+    to = models.ForeignKey(Person,
                            verbose_name=u"Para", related_name='transferences_received')
     ammount = models.FloatField(u"Valor", blank=False, null=False)
     paid = models.BooleanField(u"Pago", blank=True, default=True)
