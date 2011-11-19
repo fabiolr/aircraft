@@ -24,6 +24,7 @@ class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
     system_user = models.ForeignKey(User, verbose_name=u"usuário", blank=True, null=True)
     owner = models.BooleanField(u"É proprietário do avião?", default=False)
+    pilot = models.BooleanField(u"Pilota o avião?", default=False)
     def __unicode__(self):
         return self.name
     
@@ -43,6 +44,11 @@ class Flight(models.Model):
     date = models.DateField(u"Data")
     origin = models.CharField(u"Origem", max_length=4)
     destiny = models.CharField(u"Destino", max_length=4)
+    pilot = models.ForeignKey(Person, verbose_name=u"Piloto", related_name="pilots",
+                              limit_choices_to={'pilot': True}, null=True)
+    copilot = models.ForeignKey(Person, verbose_name=u"Co-Piloto", related_name="copilots",
+                                limit_choices_to={'pilot': True}, null=True)
+    takeoff_time = models.TimeField(u"Hora da decolagem", null=True)
     start_hobbs = models.FloatField(u"Hobbs Saída")
     end_hobbs = models.FloatField(u"Hobbs Chegada")
     cycles = models.IntegerField(u"Ciclos")
