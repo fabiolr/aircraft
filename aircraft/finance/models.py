@@ -220,6 +220,8 @@ def do_calculations(*args, **kwargs):
 
     for pay in calculate_interpayments():
         Interpayment.objects.create(by=pay[0], to=pay[1], ammount=pay[2], paid=False)
+
+    Interpayment.triggered = False
             
 models.signals.post_save.connect(trigger_calculation, sender=Payment, dispatch_uid="interpayments_1")
 models.signals.post_save.connect(trigger_calculation, sender=Responsibility, dispatch_uid="interpayments_2")

@@ -915,4 +915,30 @@ class InterpaymentCalculationTest(TestCase):
         payments = calculate_interpayments()
         self.assertEquals(len(payments), 0)
 
+    def test_calculations_turn_trigger_off(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        flight = Flight.objects.create(date = date(2011, 11, 12),
+                                       origin='SBJD',
+                                       destiny='AEIO',
+                                       start_hobbs=122,
+                                       end_hobbs=130,
+                                       cycles=3,
+                                       mantainance=True,
+                                       )
+        
+        ex = DirectExpense.objects.create(date=date(2011, 11, 12),
+                                          flight=flight,
+                                          )
+        ex.payment_set.create(ammount=1000, paid_by=o1)
+
+
+        self.assertTrue(Interpayment.triggered)
+
+        do_calculations()
+
+        self.assertTrue(not Interpayment.triggered)
+        
+
  
