@@ -53,6 +53,7 @@ class Flight(models.Model):
     end_hobbs = models.FloatField(u"Hobbs Chegada")
     cycles = models.IntegerField(u"Ciclos")
     mantainance = models.BooleanField(u"Traslado de manutenção?", blank=True, null=False, default=False)
+    remarks = models.TextField(u"Observacoes",blank=True,null=True)
 
     objects = FlightManager()
 
