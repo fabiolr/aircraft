@@ -47,7 +47,7 @@ class Flight(models.Model):
     pilot = models.ForeignKey(Person, verbose_name=u"Piloto", related_name="pilots",
                               limit_choices_to={'pilot': True}, null=True)
     copilot = models.ForeignKey(Person, verbose_name=u"Co-Piloto", related_name="copilots",
-                                limit_choices_to={'pilot': True}, null=True)
+                                limit_choices_to={'pilot': True}, null=True, blank=True)
     takeoff_time = models.TimeField(u"Hora da decolagem", null=True)
     start_hobbs = models.FloatField(u"Hobbs Saída")
     end_hobbs = models.FloatField(u"Hobbs Chegada")
