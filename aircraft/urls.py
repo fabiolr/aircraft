@@ -1,6 +1,7 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.contrib import admin
+from django.views.generic.simple import redirect_to
 
 admin.autodiscover()
 
@@ -17,6 +18,7 @@ urlpatterns = patterns('',
                        # Uncomment the next line to enable the admin:
                        url(r'^admin/', include(admin.site.urls)),
                        url(r'^admin_tools/', include('admin_tools.urls')),
+                       url(r'^$', redirect_to, {'url': '/admin/'}),
                        )
 
 urlpatterns += staticfiles_urlpatterns()
