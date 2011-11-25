@@ -14,7 +14,7 @@ class PaymentInline(admin.TabularInline):
         verbose_name_plural = u"Pagamentos"
 
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ('ammount', 'date', 'type_name', 'category_name', 'child', 'responsibility')
+    list_display = ('ammount', 'date', 'type_name', 'category_name', 'child', 'responsibility', 'checked')
     list_filter = ('date', 'category')
     search_fields = ('ammount',)
     list_display_links = ()
@@ -22,6 +22,11 @@ class ExpenseAdmin(admin.ModelAdmin):
     inlines = [
         PaymentInline,
         ]
+
+    def get_readonly_fields(self, request, instance=None):
+        if request.user.is_superuser:
+            return []
+        return ['checked']
 
     def category_name(self, expense):
         try:

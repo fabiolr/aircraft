@@ -29,6 +29,7 @@ class ExpenseCategory(models.Model):
 class Expense(models.Model):
     date = models.DateField(u"Data do pagamento", blank=False, null=False)
     category = models.ForeignKey(ExpenseCategory, verbose_name=u'Categoria', blank=True, null=True)
+    checked = models.BooleanField(u"Conferido", blank=True, default=False)
     calculated = models.BooleanField(u"Divisão OK", editable=False, default=True)
 
     @property
