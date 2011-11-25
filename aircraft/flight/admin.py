@@ -3,12 +3,13 @@
 from django.contrib import admin
 
 from flight.models import PAX, Flight, Person, Outage
-from flight.forms import FlightForm
+from flight.forms import FlightForm, PAXForm
 
 class PersonAdmin(admin.ModelAdmin):
     list_display = ('name', 'system_user', 'owner')
 
 class PAXInline(admin.TabularInline):
+    form = PAXForm
     model = PAX
     extra = 2
     

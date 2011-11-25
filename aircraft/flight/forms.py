@@ -3,7 +3,8 @@
 from datetime import date
 
 from django import forms
-from models import Flight
+from django.core.exceptions import ValidationError
+from models import Flight, PAX
 
 class FlightForm(forms.ModelForm):
 
@@ -31,3 +32,16 @@ class FlightForm(forms.ModelForm):
     def clean_origin(self):
         return self.instance.validate_origin(self.cleaned_data.get('origin'))
 
+class PAXForm(forms.ModelForm):
+
+    class Meta:
+        model = PAX
+
+    def clean_ammount(self):
+        if self.cleaned_data['ammount'] < 1:
+            raise ValidationError("A quantidade de pessoas deve ser maior que zero")
+        return self.cleaned_data['ammount']
+    
+
+
+        
