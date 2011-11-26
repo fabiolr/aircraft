@@ -16,6 +16,7 @@ urlpatterns = patterns('',
                        
                        
                        # Uncomment the next line to enable the admin:
+                       url(r'^admin/finance/aircraft.xls', 'finance.views.report'),
                        url(r'^admin/', include(admin.site.urls)),
                        url(r'^admin_tools/', include('admin_tools.urls')),
                        url(r'^$', redirect_to, {'url': '/admin/'}),

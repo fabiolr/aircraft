@@ -50,7 +50,19 @@ class CustomIndexDashboard(Dashboard):
                           ),
             
             ))
-        
+
+        self.children.append(modules.LinkList(
+                u'Relatórios',
+                children=(
+                    {
+                        'title': 'Relatório completo',
+                        'url': '/admin/finance/aircraft.xls',
+                        'external': False,
+                        'description': 'Baixar relatório em excel contendo das as despesas, responsabilidades e pagamentos',
+                        },
+                    )
+                ))
+
         self.children.append(modules.ModelList(
             _('Administration'), ('django.contrib.auth.models.User',
                                   'aircraft.flight.models.Person',

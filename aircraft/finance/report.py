@@ -76,7 +76,7 @@ class Report(object):
         self.results = self.wb.add_sheet(u'Totais')
 
         self._build_header(self.results,
-                           (u'Pessoa', u'Despesas pagas', u'Responsabilidade',
+                           (u'Pessoa', u'Responsabilidade', u'Despesas pagas',
                             u'Interpagamentos feitos', u'Interpagamentos recebidos', u'Total'))
 
         for person in Person.objects.all():
@@ -129,8 +129,8 @@ class Report(object):
                 sheet.col(i).width = width
         sheet.line += 1
 
-    def save(self):
-        self.wb.save('/tmp/aircraft.xls')
+    def save(self, filename='/tmp/aircraft.xls'):
+        self.wb.save(filename)
         
 
 class Style():
