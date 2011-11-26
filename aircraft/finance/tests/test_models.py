@@ -856,7 +856,23 @@ class InterpaymentCalculationTest(TestCase):
         self.assertEquals(pay.to, o2)
         self.assertEquals(pay.ammount, 500)
 
-    @dev
+    def test_interpayments_are_calculated_when_one_expense_is_deleted(self):
+        o1 = Person.objects.create(name=u'Owner 1', owner=True)
+        o2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        ex = FixedExpense.objects.create(date=date(2011, 11, 13),
+                                         start=date(2011, 10, 1),
+                                         end=date(2011,11,1))
+        ex.payment_set.create(ammount=1000, paid_by=o2)
+
+        do_calculations()
+
+        ex.delete()
+
+        do_calculations()
+
+        self.assertEquals(Interpayment.objects.filter().count(), 0)
+
     def test_non_calculated_expenses_are_ignored_on_interpayments_calculations(self):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
