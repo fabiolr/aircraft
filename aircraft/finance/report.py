@@ -25,12 +25,25 @@ class Report(object):
 
         for expense in Expense.objects.all().order_by('date'):
             for payment in expense.payment_set.all():
-                self._write_line(self.expenses, (expense.date,
-                                                 expense.child().__class__.__name__,
-                                                 expense.category.name,
-                                                 unicode(expense.child()),
-                                                 payment.paid_by.name,
-                                                 payment.ammount))
+                if expense.calculated:
+                    self._write_line(self.expenses, (expense.date,
+                                                     expense.child().__class__.__name__,
+                                                     expense.category.name,
+                                                     unicode(expense.child()),
+                                                     payment.paid_by.name,
+                                                     payment.ammount))
+                else:
+                    self._write_line(self.expenses, (expense.date,
+                                                     expense.child().__class__.__name__,
+                                                     expense.category.name,
+                                                     unicode(expense.child()),
+                                                     payment.paid_by.name,
+                                                     '',
+                                                     (payment.ammount, self.style.attention),
+                                                     ))
+                    
+                    
+                    
 
     def generate_responsibilities(self):
         self.responsibilities = self.wb.add_sheet(u'Responsabilidades')
@@ -38,7 +51,7 @@ class Report(object):
         self._build_header(self.responsibilities,
                            (u'Data', u'Tipo', u'Categoria', u'Despesa', u'Responsável', u'Valor'))
 
-        for expense in Expense.objects.all().order_by('date'):
+        for expense in Expense.objects.filter(calculated=True).order_by('date'):
             for resp in expense.responsibility_set.all():
                 self._write_line(self.responsibilities, (expense.date,
                                                          expense.child().__class__.__name__,
@@ -64,21 +77,32 @@ class Report(object):
 
         self._build_header(self.results,
                            (u'Pessoa', u'Despesas pagas', u'Responsabilidade',
-                            u'Interpagamentos feitos', u'Interpagamentos recebidos'))
+                            u'Interpagamentos feitos', u'Interpagamentos recebidos', u'Total'))
 
         for person in Person.objects.all():
             self._write_line(self.results,
                              (person.name,
+                              Formula('SUMPRODUCT(Responsabilidades!F2:F%d; Responsabilidades!E2:E%d=A%d)' %
+                                      (self.responsibilities.line,
+                                       self.responsibilities.line,
+                                       self.results.line+1),
+                                      ),
                               Formula('SUMPRODUCT(Despesas!F2:F%d; Despesas!E2:E%d=A%d)' %
                                       (self.expenses.line,
                                        self.expenses.line,
                                        self.results.line+1),
                                       ),
-                              Formula('SUMPRODUCT(Responsabilidades!F2:F%d; Responsabilidades!E2:E%d=A%d)' %
-                                      (self.responsibilities.line,
-                                       self.responsibilities.line,
+                              Formula('SUMPRODUCT(Interpagamentos!D2:D%d; Interpagamentos!B2:B%d=A%d)' %
+                                      (self.interpayments.line,
+                                       self.interpayments.line,
                                        self.results.line+1),
-                                      )
+                                      ),
+                              Formula('SUMPRODUCT(Interpagamentos!D2:D%d; Interpagamentos!C2:C%d=A%d)' %
+                                      (self.interpayments.line,
+                                       self.interpayments.line,
+                                       self.results.line+1),
+                                      ),
+                              Formula('-B%d + C%d + D%d - E%d' % ((self.results.line+1,)*4)),
                               )
                              )
                              
@@ -86,12 +110,21 @@ class Report(object):
     def _build_header(self, sheet, header):
         for i, col in enumerate(header):
             sheet.write(0, i, col, self.style.header)
+            width = self.style.width(col, 275)
+            if width > sheet.col(i).width:
+                sheet.col(i).width = width
         sheet.line = 1
         
     def _write_line(self, sheet, line):
         for i, col in enumerate(line):
-            sheet.write(sheet.line, i, col, self.style.guess(col))
-            width = self.style.width(col)
+            if isinstance(col, tuple):
+                value = col[0]
+                style = col[1]
+            else:
+                value = col
+                style = self.style.guess(col)
+            sheet.write(sheet.line, i, value, style)
+            width = self.style.width(col, 260)
             if width > sheet.col(i).width:
                 sheet.col(i).width = width
         sheet.line += 1
@@ -111,12 +144,12 @@ class Style():
             style.num_format_str = '[$R$-416] #,##0.00'
         return style
 
-    def width(self, value):
+    def width(self, value, step):
         if isinstance(value, date):
             return 2000
         if isinstance(value, float) or isinstance(value, Formula):
-            return 3000
-        return 260 * len(value)
+            return 4000
+        return step * len(value)
 
     @property
     def base(self):
@@ -146,6 +179,12 @@ class Style():
 
         return style
 
+    @property
+    def attention(self, style=None):
+        return easyxf(
+            'pattern: pattern solid, back_colour red;',
+            num_format_str = '[$R$-416] #,##0.00'
+            )
 
 if __name__ == '__main__':
     report = Report()
