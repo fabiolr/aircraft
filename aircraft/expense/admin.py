@@ -9,11 +9,7 @@ from finance.admin import ExpenseAdmin
 
 class DirectExpenseAdmin(ExpenseAdmin):
     list_display = ( 'ammount', 'date', 'flight', 'description', 'responsibility', 'checked' )
-<<<<<<< HEAD
     list_filter = ('date', 'category', 'checked' )
-=======
-    list_filter = ('date', 'category')
->>>>>>> 27ea69cda5e9b0a2fed9bbab270f8b64f24c4b8a
     form = DirectExpenseForm
 
 class VariableExpenseAdmin(ExpenseAdmin):
