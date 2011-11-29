@@ -27,8 +27,8 @@ class CustomIndexDashboard(Dashboard):
         #site_name = get_admin_site_name(context)
 
         self.children.append(modules.ModelList(
-            u'Avião', ('aircraft.flight.models.Flight',
-                       'aircraft.flight.models.Outage',
+            u'Avião', ('flight.models.Flight',
+                       'flight.models.Outage',
                        ),
             
             ))
@@ -45,12 +45,12 @@ class CustomIndexDashboard(Dashboard):
             ))
         
         self.children.append(modules.ModelList(
-            u'Finanças', ('aircraft.finance.models.Interpayment',
-                          'aircraft.finance.models.Expense',
+            u'Finanças', ('finance.models.Interpayment',
+                          'finance.models.Expense',
                           ),
             
             ))
-
+        
         self.children.append(modules.LinkList(
                 u'Relatórios',
                 children=(
@@ -65,7 +65,7 @@ class CustomIndexDashboard(Dashboard):
 
         self.children.append(modules.ModelList(
             _('Administration'), ('django.contrib.auth.models.User',
-                                  'aircraft.flight.models.Person',
+                                  'flight.models.Person',
                                   ),
             
             ))
