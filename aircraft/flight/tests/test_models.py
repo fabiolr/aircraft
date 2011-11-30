@@ -78,7 +78,6 @@ class FlightTest(TestCase):
         flight2.mantainance = True
         flight2.save()
 
-    @dev
     def test_start_hobbs_must_be_smaller_than_end_hobbs(self):
         try:
             Flight.objects.create(start_hobbs=10,
@@ -110,7 +109,6 @@ class FlightTest(TestCase):
         else:
             self.fail()
 
-    @dev
     def test_flight_must_depart_from_previous_flight_destination(self):
         Flight.objects.create(start_hobbs=0,
                               end_hobbs=5,
@@ -143,7 +141,6 @@ class FlightTest(TestCase):
                               destiny='AEIU',
                               cycles=1,
                               date=date(2011, 11, 16))
-    @dev
     def test_date_of_one_flight_must_not_be_before_previous_flight(self):
         Flight.objects.create(start_hobbs=0,
                               end_hobbs=5,
@@ -158,4 +155,3 @@ class FlightTest(TestCase):
             pass
         else:
             self.fail()
-

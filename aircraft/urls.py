@@ -20,6 +20,7 @@ urlpatterns = patterns('',
                        url(r'^admin/', include(admin.site.urls)),
                        url(r'^admin_tools/', include('admin_tools.urls')),
                        url(r'^$', redirect_to, {'url': '/admin/'}),
+                       url(r'^status/$', 'flight.views.status'),
                        )
 
 urlpatterns += staticfiles_urlpatterns()
