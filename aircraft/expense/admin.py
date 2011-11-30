@@ -3,8 +3,8 @@ from admin_tools.dashboard import Dashboard
 
 from forms import DirectExpenseForm, VariableExpenseForm, FixedExpenseForm
 
-from aircraft.expense.models import (DirectExpense, VariableExpense, FixedExpense,
-                                     HourlyMantainance, ScheduleMantainance, EventualMantainance)
+from expense.models import (DirectExpense, VariableExpense, FixedExpense,
+                            HourlyMantainance, ScheduleMantainance, EventualMantainance)
 from finance.admin import ExpenseAdmin
 
 class DirectExpenseAdmin(ExpenseAdmin):
