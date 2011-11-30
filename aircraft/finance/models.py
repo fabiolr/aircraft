@@ -11,7 +11,6 @@ from flight.models import Person
 EXPENSE_TYPES = {1: u'Direta por operação',
                  2: u'Variável operacional',
                  3: u'Fixa operacional',
-                 4: u'Pane',
                  }
 
 class ExpenseCategory(models.Model):

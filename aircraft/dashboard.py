@@ -47,6 +47,7 @@ class CustomIndexDashboard(Dashboard):
         self.children.append(modules.ModelList(
             u'Finanças', ('finance.models.Interpayment',
                           'finance.models.Expense',
+                          'finance.models.ExpenseCategory',
                           ),
             
             ))
