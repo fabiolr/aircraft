@@ -18,11 +18,6 @@ class ViewTest(TestCase):
 
         resp = client.get('/status/')
 
-        self.assertTrue(resp.status_code in (403, 301, 302))
-
-        client.login(username='user', password='user')
-
-        resp = client.get('/status/')
         self.assertEquals(200, resp.status_code)
         self.assertEquals(resp.context['hobbs'], 0)
         self.assertEquals(resp.context['cycles'], 0)

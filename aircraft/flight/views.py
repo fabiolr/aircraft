@@ -7,7 +7,7 @@ from django.db.models import Sum
 
 from flight.models import Flight
 
-@login_required
+
 def status(request):
     try:
         hobbs = Flight.objects.all().order_by('-number')[0].end_hobbs
@@ -21,5 +21,5 @@ def status(request):
                               { 'hobbs': hobbs, 'cycles': cycles },
                               context_instance=RequestContext(request))
 
-
+ 
 
