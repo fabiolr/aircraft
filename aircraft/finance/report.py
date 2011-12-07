@@ -82,26 +82,30 @@ class Report(object):
         for person in Person.objects.all():
             self._write_line(self.results,
                              (person.name,
-                              Formula('SUMPRODUCT(Responsabilidades!F2:F%d; Responsabilidades!E2:E%d=A%d)' %
+                              Formula('Sumif(Responsabilidades!E2:E%d, Totais!A%d, Responsabilidades!F2:F%d)' %
                                       (self.responsibilities.line,
-                                       self.responsibilities.line,
-                                       self.results.line+1),
+                                       self.results.line+1,
+                                       self.responsibilities.line),
                                       ),
-                              Formula('SUMPRODUCT(Despesas!F2:F%d; Despesas!E2:E%d=A%d)' %
+                              Formula('Sumif(Despesas!E2:E%d, Despesas!A%d, Despesas!F2:F%d)' %
                                       (self.expenses.line,
-                                       self.expenses.line,
-                                       self.results.line+1),
+                                       self.results.line+1,
+                                       self.expenses.line),
                                       ),
-                              Formula('SUMPRODUCT(Interpagamentos!D2:D%d; Interpagamentos!B2:B%d=A%d)' %
+
+                              Formula('Sumif(Interpagamentos!B2:B%d, Interpagamentos!A%d, Interpagamentos!D2:D%d)' %
                                       (self.interpayments.line,
-                                       self.interpayments.line,
-                                       self.results.line+1),
-                                      ),
-                              Formula('SUMPRODUCT(Interpagamentos!D2:D%d; Interpagamentos!C2:C%d=A%d)' %
+                                       self.results.line+1,
+                                       self.interpayments.line),
+                                      ),  
+                              
+                              Formula('Sumif(Interpagamentos!C2:C%d, Interpagamentos!A%d, Interpagamentos!D2:D%d)' %
                                       (self.interpayments.line,
-                                       self.interpayments.line,
-                                       self.results.line+1),
+                                       self.results.line+1,
+                                       self.interpayments.line),
                                       ),
+
+
                               Formula('-B%d + C%d + D%d - E%d' % ((self.results.line+1,)*4)),
                               )
                              )
