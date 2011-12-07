@@ -27,30 +27,31 @@ class CustomIndexDashboard(Dashboard):
         #site_name = get_admin_site_name(context)
 
         self.children.append(modules.ModelList(
-            u'Avião', ('aircraft.flight.models.Flight',
-                       'aircraft.flight.models.Outage',
+            u'Avião', ('flight.models.Flight',
+                       'flight.models.Outage',
                        ),
             
             ))
 
         self.children.append(modules.ModelList(
-            u'Despesas', ('aircraft.expense.models.DirectExpense',
-                          'aircraft.expense.models.VariableExpense',
-                          'aircraft.expense.models.FixedExpense',
-                          'aircraft.expense.models.HourlyMantainance',
-                          'aircraft.expense.models.ScheduleMantainance',
-                          'aircraft.expense.models.EventualMantainance',
+            u'Despesas', ('expense.models.DirectExpense',
+                          'expense.models.VariableExpense',
+                          'expense.models.FixedExpense',
+                          'expense.models.HourlyMantainance',
+                          'expense.models.ScheduleMantainance',
+                          'expense.models.EventualMantainance',
                           ),
             
             ))
         
         self.children.append(modules.ModelList(
-            u'Finanças', ('aircraft.finance.models.Interpayment',
-                          'aircraft.finance.models.Expense',
+            u'Finanças', ('finance.models.Interpayment',
+                          'finance.models.Expense',
+                          'finance.models.ExpenseCategory',
                           ),
             
             ))
-
+        
         self.children.append(modules.LinkList(
                 u'Relatórios',
                 children=(
@@ -65,7 +66,7 @@ class CustomIndexDashboard(Dashboard):
 
         self.children.append(modules.ModelList(
             _('Administration'), ('django.contrib.auth.models.User',
-                                  'aircraft.flight.models.Person',
+                                  'flight.models.Person',
                                   ),
             
             ))

@@ -109,7 +109,7 @@ MIDDLEWARE_CLASSES = (
     'finance.middleware.CalculatorMiddleware',
 )
 
-ROOT_URLCONF = 'aircraft.urls'
+ROOT_URLCONF = 'urls'
 
 TEMPLATE_DIRS = (
     os.path.join(SITE_ROOT, 'templates'),
@@ -133,9 +133,9 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 
-    'aircraft.flight',
-    'aircraft.finance',
-    'aircraft.expense',
+    'flight',
+    'finance',
+    'expense',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -152,9 +152,9 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
 )
 
-ADMIN_TOOLS_MENU = 'aircraft.menu.CustomMenu'
-ADMIN_TOOLS_INDEX_DASHBOARD = 'aircraft.dashboard.CustomIndexDashboard'
-ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'aircraft.dashboard.CustomAppIndexDashboard'
+ADMIN_TOOLS_MENU = 'menu.CustomMenu'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'dashboard.CustomIndexDashboard'
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'dashboard.CustomAppIndexDashboard'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
