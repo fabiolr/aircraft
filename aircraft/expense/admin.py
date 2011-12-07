@@ -8,17 +8,19 @@ from expense.models import (DirectExpense, VariableExpense, FixedExpense,
 from finance.admin import ExpenseAdmin
 
 class DirectExpenseAdmin(ExpenseAdmin):
-    list_display = ( 'ammount', 'date', 'flight', 'description', 'responsibility', 'checked' )
+
+    list_display = ( 'br_ammount', 'date', 'flight', 'description', 'responsibility', 'checked' )
     list_filter = ('date', 'category', 'checked' )
+
     form = DirectExpenseForm
 
 class VariableExpenseAdmin(ExpenseAdmin):
-    list_display = ( 'ammount', 'date', 'start', 'end', 'responsibility', 'checked' )
+    list_display = ( 'br_ammount', 'date', 'start', 'end', 'responsibility', 'checked' )
     list_filter = ('date', 'category')
     form = VariableExpenseForm
 
 class FixedExpenseAdmin(ExpenseAdmin):
-    list_display = ( 'ammount', 'date', 'start', 'end', 'responsibility', 'checked' )
+    list_display = ( 'br_ammount', 'date', 'start', 'end', 'responsibility', 'checked' )
     list_filter = ('date', 'category')
     form = FixedExpenseForm
 

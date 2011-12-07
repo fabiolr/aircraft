@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
+from django.utils import formats
 
 from finance.models import Interpayment, Payment, Expense, ExpenseCategory
+
 
 class PaymentInline(admin.TabularInline):
     model = Payment
@@ -14,14 +16,18 @@ class PaymentInline(admin.TabularInline):
         verbose_name_plural = u"Pagamentos"
 
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ('ammount', 'date', 'type_name', 'category_name', 'child', 'responsibility', 'checked')
+    list_display = ('br_ammount', 'date', 'type_name', 'category_name', 'child', 'responsibility', 'checked')
     list_filter = ('date', 'category')
     search_fields = ('ammount',)
     list_display_links = ()
-
+    
     inlines = [
         PaymentInline,
         ]
+
+    def br_ammount(self, expense):
+        return ("R$ %.2f"%expense.ammount).replace(".",",")
+    br_ammount.short_description = 'Valor'
 
     def get_readonly_fields(self, request, instance=None):
         if request.user.is_superuser:
