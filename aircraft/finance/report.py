@@ -87,19 +87,19 @@ class Report(object):
                                        self.results.line+1,
                                        self.responsibilities.line),
                                       ),
-                              Formula('Sumif(Despesas!E2:E%d, Despesas!A%d, Despesas!F2:F%d)' %
+                              Formula('Sumif(Despesas!E2:E%d, Totais!A%d, Despesas!F2:F%d)' %
                                       (self.expenses.line,
                                        self.results.line+1,
                                        self.expenses.line),
                                       ),
 
-                              Formula('Sumif(Interpagamentos!B2:B%d, Interpagamentos!A%d, Interpagamentos!D2:D%d)' %
+                              Formula('Sumif(Interpagamentos!B2:B%d, Totais!A%d, Interpagamentos!D2:D%d)' %
                                       (self.interpayments.line,
                                        self.results.line+1,
                                        self.interpayments.line),
                                       ),  
                               
-                              Formula('Sumif(Interpagamentos!C2:C%d, Interpagamentos!A%d, Interpagamentos!D2:D%d)' %
+                              Formula('Sumif(Interpagamentos!C2:C%d, Totais!A%d, Interpagamentos!D2:D%d)' %
                                       (self.interpayments.line,
                                        self.results.line+1,
                                        self.interpayments.line),
