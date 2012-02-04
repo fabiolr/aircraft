@@ -155,3 +155,21 @@ class FlightTest(TestCase):
             pass
         else:
             self.fail()
+
+    def test_flight_can_be_edited(self):
+        flight = Flight.objects.create(start_hobbs=0,
+                                       end_hobbs=5,
+                                       origin='ABCD',
+                                       destiny='DCBA',
+                                       cycles=1,
+                                       date=date(2011, 11, 15))
+
+        Flight.objects.create(start_hobbs=5,
+                              end_hobbs=6,
+                              origin='DCBA',
+                              destiny='AEIO',
+                              cycles=1,
+                              date=date(2011, 11, 16))
+
+        flight.cycles = 2;
+        flight.save()

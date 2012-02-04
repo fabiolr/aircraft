@@ -72,7 +72,7 @@ class Flight(models.Model):
 
     def validate_hobbs(self, start_hobbs, end_hobbs):
         if not start_hobbs and self.number > 1:
-            start_hobbs = Flight.objects.last.end_hobbs
+            start_hobbs = self.previous_flight.end_hobbs
         if self.number > 1 and abs(start_hobbs - self.previous_flight.end_hobbs) > 1e-4:
             raise ValidationError(u"Hobbs inicial deste vôo deve ser igual ao final do último (%.1f)" %
                                   self.previous_flight.end_hobbs
@@ -84,13 +84,13 @@ class Flight(models.Model):
         return start_hobbs
 
     def validate_date(self, date):
-        if self.number > 1 and date < Flight.objects.last.date:
+        if self.number > 1 and date < self.previous_flight.date:
             raise ValidationError(u"Data do vôo deve ser posterior ao último vôo")
         return date
     def validate_origin(self, origin):
         if not origin and self.number > 1:
-            origin = Flight.objects.last.destiny
-        if self.number > 1 and origin != Flight.objects.last.destiny:
+            origin = self.previous_flight.destiny
+        if self.number > 1 and origin != self.previous_flight.destiny:
             raise ValidationError(u"Vôo deve partir do último local de destino")
         return origin
 
