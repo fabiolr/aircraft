@@ -6,10 +6,15 @@ import fudge
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 
-from flight.models import Person, Flight
+from flight.models import Person, Flight, Airport, OPERATIONAL_BASE
 from expense.models import DirectExpense
 
 class DirectExpenseTest(TestCase):
+
+    def setUp(self):
+        self.a = Airport.objects.create(icao='ABCD', remote_id=1, latitude=0, longitude=0)
+        self.b = Airport.objects.create(icao='DCBA', remote_id=2, latitude=0, longitude=0)
+        Airport.objects.create(icao=OPERATIONAL_BASE, remote_id=5, latitude=0, longitude=0)
 
     @fudge.patch('finance.models.do_calculations')
     def test_do_calculations_is_triggered_on_creation(self, fake_calc):
@@ -18,8 +23,8 @@ class DirectExpenseTest(TestCase):
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date = date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='AEIO',
+                                       origin=self.a,
+                                       destiny=self.b,
                                        start_hobbs=122,
                                        end_hobbs=130,
                                        cycles=3,

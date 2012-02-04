@@ -14,11 +14,33 @@ OUTAGE_TYPES = (u'Mau uso',
                 u'Força maior',
                 u'Desconhecido',
                 )
+AIRPORT_TYPES = (u'small_airport',
+                 u'medium_airport',
+                 u'large_airport',
+                 u'heliport',
+                 u'balloonport',
+                 u'seaplane_base',
+                 u'closed',
+                 )
 
 OUTAGE_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
+AIRPORT_CHOICES = tuple([ (val, val) for val in OUTAGE_TYPES ])
+
 
 def validate(sender, **kwargs):
     kwargs['instance'].validate()
+
+class Airport(models.Model):
+    remote_id = models.IntegerField(unique=True, null=True)
+    icao = models.CharField(max_length=8, primary_key=True)
+    atype = models.CharField(max_length=16, choices=AIRPORT_CHOICES)
+    name = models.CharField(u"Nome", max_length=128)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
+    elevation = models.IntegerField(u'Elevação', null=True)
+
+    def __unicode__(self):
+        return self.icao
 
 class Person(models.Model):
     name = models.CharField(u"Nome", max_length=64)
@@ -42,8 +64,8 @@ class FlightManager(models.Manager):
 class Flight(models.Model):
     number = models.IntegerField(u"#", editable=False)
     date = models.DateField(u"Data")
-    origin = models.CharField(u"Origem", max_length=4)
-    destiny = models.CharField(u"Destino", max_length=4)
+    origin = models.ForeignKey(Airport, verbose_name=u"Origem", related_name="departing_flights")
+    destiny = models.ForeignKey(Airport, verbose_name=u"Destino", related_name="arriving_flights")
     pilot = models.ForeignKey(Person, verbose_name=u"Piloto", related_name="pilots",
                               limit_choices_to={'pilot': True}, null=True)
     copilot = models.ForeignKey(Person, verbose_name=u"Co-Piloto", related_name="copilots",
@@ -68,7 +90,10 @@ class Flight(models.Model):
     def validate(self):
         self.start_hobbs = self.validate_hobbs(self.start_hobbs, self.end_hobbs)
         self.validate_date(self.date)
-        self.origin = self.validate_origin(self.origin)
+        try:
+            self.origin = self.validate_origin(self.origin)
+        except Airport.DoesNotExist:
+            self.origin = self.validate_origin(None)
 
     def validate_hobbs(self, start_hobbs, end_hobbs):
         if not start_hobbs and self.number > 1:
@@ -129,22 +154,22 @@ class Flight(models.Model):
         return Flight.objects.filter(number__gte=start.number,
                                      number__lte=end.number, 
                                      mantainance=False).order_by('number')
-        
+
     @property
     def first_flight(self):
-        if self.origin == OPERATIONAL_BASE:
+        if self.origin.icao == OPERATIONAL_BASE:
             return self
         try:
-            return Flight.objects.filter(number__lt=self.number, origin=OPERATIONAL_BASE).order_by('-number')[0]
+            return Flight.objects.filter(number__lt=self.number, origin=Airport.objects.get(icao=OPERATIONAL_BASE)).order_by('-number')[0]
         except IndexError:
             return self
 
     @property
     def last_flight(self):
-        if self.destiny == OPERATIONAL_BASE:
+        if self.destiny.icao == OPERATIONAL_BASE:
             return self
         try:
-            return Flight.objects.filter(number__gt=self.number, destiny=OPERATIONAL_BASE).order_by('number')[0]
+            return Flight.objects.filter(number__gt=self.number, destiny=Airport.objects.get(icao=OPERATIONAL_BASE)).order_by('number')[0]
         except IndexError:
             return self
 
@@ -206,4 +231,3 @@ class Outage(models.Model):
 
     class Meta:
         verbose_name = u"Pane"
-

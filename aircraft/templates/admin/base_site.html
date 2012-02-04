@@ -12,6 +12,12 @@
 {% endif %}
 {% endblock %}
 
+{% block extrahead %}
+<!-- Hello -->
+{{block.super}}
+<!-- Hello -->
+{% endblock %}
+
 {% block branding %}
 <h1 id="site-name">PR-NOV Admin</h1>
 {% endblock %}

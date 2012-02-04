@@ -5,7 +5,7 @@ from datetime import date
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from flight.models import Person, Flight, Outage
+from flight.models import Person, Flight, Outage, Airport, OPERATIONAL_BASE
 from expense.models import (DirectExpense, VariableExpense, FixedExpense,
                             HourlyMantainance, ScheduleMantainance, EventualMantainance)
 from finance.models import (Interpayment, Expense, Responsibility,
@@ -16,13 +16,19 @@ from fixtures import fixtures_3_return_flights_in_3_months
 
 class TestDirectExpense(TestCase):
 
+    def setUp(self):
+        self.a = Airport.objects.create(icao='ABCD', remote_id=1, latitude=0, longitude=0)
+        self.b = Airport.objects.create(icao='DCBA', remote_id=2, latitude=0, longitude=0)
+        self.c = Airport.objects.create(icao='AEIO', remote_id=3, latitude=0, longitude=0)
+        self.o = Airport.objects.create(icao=OPERATIONAL_BASE, remote_id=5, latitude=0, longitude=0)
+
     def test_responsibility_is_shared_proportional_to_pax(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date=date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='ABCD',
+                                       origin=self.o,
+                                       destiny=self.a,
                                        start_hobbs=100,
                                        end_hobbs=200,
                                        cycles=3,
@@ -73,8 +79,8 @@ class TestDirectExpense(TestCase):
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date=date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='ABCD',
+                                       origin=self.o,
+                                       destiny=self.a,
                                        start_hobbs=100,
                                        end_hobbs=200,
                                        cycles=3,
@@ -110,8 +116,8 @@ class TestDirectExpense(TestCase):
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight1 = Flight.objects.create(date=date(2011, 11, 12),
-                                        origin='SBJD',
-                                        destiny='ABCD',
+                                        origin=self.o,
+                                        destiny=self.a,
                                         start_hobbs=100,
                                         end_hobbs=110,
                                         cycles=3,
@@ -124,8 +130,8 @@ class TestDirectExpense(TestCase):
                                       ammount=5)
 
         flight2 = Flight.objects.create(date = date(2011, 11, 12),
-                                        origin='ABCD',
-                                        destiny='BCDE',
+                                        origin=self.a,
+                                        destiny=self.b,
                                         start_hobbs=110,
                                         end_hobbs=115,
                                         cycles=2,
@@ -146,8 +152,8 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[1].ammount, 1000)
 
         flight3 = Flight.objects.create(date = date(2011, 11, 12),
-                                        origin='BCDE',
-                                        destiny='SBJD',
+                                        origin=self.b,
+                                        destiny=self.o,
                                         start_hobbs=115,
                                         end_hobbs=122,
                                         cycles=3,
@@ -172,8 +178,8 @@ class TestDirectExpense(TestCase):
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date = date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='AEIO',
+                                       origin=self.o,
+                                       destiny=self.c,
                                        start_hobbs=122,
                                        end_hobbs=130,
                                        cycles=3,
@@ -190,8 +196,8 @@ class TestDirectExpense(TestCase):
         self.assertEquals(len(responsibility), 0)
 
         flight2 = Flight.objects.create(date = date(2011, 11, 12),
-                                        origin='AEIO',
-                                        destiny='ABCD',
+                                        origin=self.c,
+                                        destiny=self.a,
                                         start_hobbs=130,
                                         end_hobbs=131,
                                         cycles=3,
@@ -202,8 +208,8 @@ class TestDirectExpense(TestCase):
         self.assertEquals(len(responsibility), 0)
 
         flight3 = Flight.objects.create(date = date(2011, 11, 12),
-                                        origin='ABCD',
-                                        destiny='SBJD',
+                                        origin=self.a,
+                                        destiny=self.o,
                                         start_hobbs=131,
                                         end_hobbs=132,
                                         cycles=3,
@@ -371,8 +377,8 @@ class FixedExpenseTest(TestCase):
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date=date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='ABCD',
+                                       origin=Airport.objects.get_or_create(icao='SBJD')[0],
+                                       destiny=Airport.objects.get_or_create(icao='ABCD')[0],
                                        start_hobbs=100,
                                        end_hobbs=200,
                                        cycles=3,
@@ -878,8 +884,8 @@ class InterpaymentCalculationTest(TestCase):
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date = date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='AEIO',
+                                       origin=Airport.objects.get_or_create(icao='SBJD')[0],
+                                       destiny=Airport.objects.get_or_create(icao='AEIO')[0],
                                        start_hobbs=122,
                                        end_hobbs=130,
                                        cycles=3,
@@ -936,8 +942,8 @@ class InterpaymentCalculationTest(TestCase):
         o2 = Person.objects.create(name=u'Owner 2', owner=True)
 
         flight = Flight.objects.create(date = date(2011, 11, 12),
-                                       origin='SBJD',
-                                       destiny='AEIO',
+                                       origin=Airport.objects.get_or_create(icao='SBJD')[0],
+                                       destiny=Airport.objects.get_or_create(icao='AEIO')[0],
                                        start_hobbs=122,
                                        end_hobbs=130,
                                        cycles=3,

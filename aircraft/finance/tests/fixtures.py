@@ -1,13 +1,14 @@
 from datetime import date
 from expense.models import Person, Flight
+from flight.models import Airport
 
 def fixtures_3_return_flights_in_3_months():
     owner1 = Person.objects.create(name=u'Owner 1', owner=True)
     owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
     flight1 = Flight.objects.create(
-            origin = "SBJD", 
-            destiny = "ABCD", 
+            origin = Airport.objects.get_or_create(icao="SBJD")[0], 
+            destiny = Airport.objects.get_or_create(icao="ABCD")[0], 
             start_hobbs = 100.0, 
             mantainance = False, 
             date = date(2011, 10, 12), 
@@ -17,8 +18,8 @@ def fixtures_3_return_flights_in_3_months():
     flight1.pax_set.create(owner=owner1, ammount=4)
     
     flight2 = Flight.objects.create(
-            origin = "ABCD", 
-            destiny = "SBJD", 
+            origin = Airport.objects.get_or_create(icao="ABCD")[0], 
+            destiny = Airport.objects.get_or_create(icao="SBJD")[0], 
             start_hobbs = 110.0, 
             mantainance = False, 
             date = date(2011, 10, 13), 
@@ -27,8 +28,8 @@ def fixtures_3_return_flights_in_3_months():
         )
     
     flight3 = Flight.objects.create(
-            origin = "SBJD", 
-            destiny = "BCDE", 
+            origin = Airport.objects.get_or_create(icao="SBJD")[0], 
+            destiny = Airport.objects.get_or_create(icao="BCDE")[0], 
             start_hobbs = 120.0, 
             mantainance = False, 
             date = date(2011, 11, 12), 
@@ -38,8 +39,8 @@ def fixtures_3_return_flights_in_3_months():
     flight3.pax_set.create(owner=owner2, ammount=3)
     
     flight4 = Flight.objects.create(
-            origin = "BCDE", 
-            destiny = "SBJD", 
+            origin = Airport.objects.get_or_create(icao="BCDE")[0], 
+            destiny = Airport.objects.get_or_create(icao="SBJD")[0], 
             start_hobbs = 130.0, 
             mantainance = False, 
             date = date(2011, 11, 13), 
@@ -48,8 +49,8 @@ def fixtures_3_return_flights_in_3_months():
         )
     
     flight5 = Flight.objects.create(
-            origin = "SBJD", 
-            destiny = "CDEF", 
+            origin = Airport.objects.get_or_create(icao="SBJD")[0], 
+            destiny = Airport.objects.get_or_create(icao="CDEF")[0], 
             start_hobbs = 140.0, 
             mantainance = False, 
             date = date(2011, 12, 12), 
@@ -60,8 +61,8 @@ def fixtures_3_return_flights_in_3_months():
     flight5.pax_set.create(owner=owner2, ammount=6)
     
     flight6 = Flight.objects.create(
-            origin = "CDEF", 
-            destiny = "SBJD", 
+            origin = Airport.objects.get_or_create(icao="CDEF")[0], 
+            destiny = Airport.objects.get_or_create(icao="SBJD")[0], 
             start_hobbs = 170.0, 
             mantainance = False, 
             date = date(2011, 12, 13), 
@@ -70,8 +71,8 @@ def fixtures_3_return_flights_in_3_months():
         )
     
     flight7 = Flight.objects.create(
-            origin = "SBJD", 
-            destiny = "MANT", 
+            origin = Airport.objects.get_or_create(icao="SBJD")[0], 
+            destiny = Airport.objects.get_or_create(icao="MANT")[0], 
             start_hobbs = 200.0, 
             date = date(2011, 12, 20), 
             cycles = 3, 
@@ -80,8 +81,8 @@ def fixtures_3_return_flights_in_3_months():
         )
 
     flight8 = Flight.objects.create(
-            origin = "MANT", 
-            destiny = "SBJD", 
+            origin = Airport.objects.get_or_create(icao="MANT")[0], 
+            destiny = Airport.objects.get_or_create(icao="SBJD")[0], 
             start_hobbs = 202.0, 
             date = date(2011, 12, 20), 
             cycles = 3, 

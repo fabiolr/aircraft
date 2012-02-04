@@ -4,8 +4,8 @@ from datetime import date
 
 from django import forms
 from django.core.exceptions import ValidationError
-from models import Flight, PAX
 
+from models import Flight, PAX
 class FlightForm(forms.ModelForm):
 
     class Meta:
@@ -20,6 +20,8 @@ class FlightForm(forms.ModelForm):
                                   }
 
         super(FlightForm, self).__init__(*argz, **kwargs)
+        self.fields['origin'].widget = forms.widgets.TextInput()
+        self.fields['destiny'].widget = forms.widgets.TextInput()
 
     def clean(self):
         self.cleaned_data['start_hobbs'] = self.instance.validate_hobbs(self.cleaned_data.get('start_hobbs'),

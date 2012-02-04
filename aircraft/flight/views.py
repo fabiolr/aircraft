@@ -7,6 +7,8 @@ from django.db.models import Sum
 
 from flight.models import Flight
 
+def airports(request):
+    pass
 
 def status(request):
     try:
