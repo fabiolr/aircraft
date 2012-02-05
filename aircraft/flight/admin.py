@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from flight.models import PAX, Flight, Person, Outage
+from flight.models import PAX, Flight, Person, Outage, OperationalBase
 from flight.forms import FlightForm, PAXForm
 
 class PersonAdmin(admin.ModelAdmin):
@@ -22,6 +22,10 @@ class FlightAdmin(admin.ModelAdmin):
 class OutageAdmin(admin.ModelAdmin):
     pass
 
+class OperationalBaseAdmin(admin.ModelAdmin):
+    pass
+
 admin.site.register(Flight, FlightAdmin)
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Outage, OutageAdmin)
+admin.site.register(OperationalBase, OperationalBaseAdmin)

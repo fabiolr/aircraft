@@ -239,3 +239,14 @@ class Outage(models.Model):
 class OperationalBase(models.Model):
     base = models.ForeignKey(Airport)
     since = models.ForeignKey(Flight, verbose_name=u"A partir de", null=True)
+
+    def __unicode__(self):
+        if self.since:
+            return '#%d %s - %s' % (self.since.number, 
+                                    self.since.date.strftime('%d/%m/%Y'),
+                                    self.base)
+        return 'Primeira base - %s' % self.base
+
+    class Meta:
+        verbose_name = u"Base Operacional"
+        verbose_name_plural=u"Bases Operacionais"

@@ -29,6 +29,7 @@ class CustomIndexDashboard(Dashboard):
         self.children.append(modules.ModelList(
             u'Avião', ('flight.models.Flight',
                        'flight.models.Outage',
+                       'flight.models.OperationalBase',
                        ),
             
             ))
