@@ -14,6 +14,7 @@ class PAXInline(admin.TabularInline):
     extra = 2
     
 class FlightAdmin(admin.ModelAdmin):
+    list_display = ('__unicode__', 'distance', 'speed')
     form = FlightForm
     inlines = [
         PAXInline,

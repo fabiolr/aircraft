@@ -139,7 +139,6 @@ class FlightTest(TestCase):
         else:
             self.fail()
 
-    @dev
     def test_flight_must_depart_from_previous_flight_destination(self):
         Flight.objects.create(start_hobbs=0,
                               end_hobbs=5,
@@ -208,3 +207,20 @@ class FlightTest(TestCase):
 
         flight.cycles = 2;
         flight.save()
+
+    def test_distance_and_speed(self):
+        # Coordinates from SBJD
+        self.a.latitude = -23.1803690757
+        self.a.longitude = -46.9444084167
+
+        # Coordinates from SBRJ
+        self.b.latitude = -22.910499572799999
+        self.b.longitude = -43.163101196299998
+
+        flight = Flight.objects.create(start_hobbs=3, end_hobbs=3.5,
+                                       origin=self.a, destiny=self.b,
+                                       date=date(2012, 2, 5),
+                                       cycles=1)
+
+        self.assertAlmostEquals(flight.distance, 209.5344, 4)
+        self.assertAlmostEquals(flight.speed, 2 * 209.5344, 4)

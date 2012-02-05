@@ -5,6 +5,8 @@ from django.db.models import Sum
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 
+from math import sin, cos, atan2, sqrt, pi, acos, radians
+
 OUTAGE_TYPES = (u'Mau uso',
                 u'Fadiga',
                 u'Eventual',
@@ -35,6 +37,13 @@ class Airport(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     elevation = models.IntegerField(u'Elevação', null=True)
+
+    @property
+    def rlat(self):
+        return radians(self.latitude)
+    @property
+    def rlon(self):
+        return radians(self.longitude)
 
     def __unicode__(self):
         return self.icao
@@ -75,6 +84,10 @@ class Flight(models.Model):
     remarks = models.TextField(u"Observacoes",blank=True,null=True)
 
     objects = FlightManager()
+
+    def __unicode__(self):
+        return '#%04d %s %s %s %.1f-%.1f' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
+                                             self.destiny, self.start_hobbs, self.end_hobbs)
 
     def __init__(self, *args, **kwargs):
         super(Flight, self).__init__(*args, **kwargs)
@@ -187,10 +200,18 @@ class Flight(models.Model):
     def hobbs_desc(self):
         return '%d-%d' % (self.start_hobbs, self.end_hobbs)
     
-    def __unicode__(self):
-        return '#%04d %s %s %s %.1f-%.1f' % (self.number, self.date.strftime('%d/%m/%Y'), self.origin,
-                                             self.destiny, self.start_hobbs, self.end_hobbs)
+    @property
+    def distance(self):
+        F = self.origin
+        T = self.destiny
+        a = sin((F.rlat - T.rlat)/2)**2 + cos(F.rlat)*cos(T.rlat)*sin((F.rlon-T.rlon)/2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1-a))
+        return 6371 * c / 1.852
 
+    @property
+    def speed(self):
+        return self.distance / (self.end_hobbs - self.start_hobbs)
+        
     class Meta:
         verbose_name = u"Vôo"
         ordering = ['-number']
