@@ -5,9 +5,6 @@ from django.db.models import Sum
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 
-
-OPERATIONAL_BASE = 'SBJD'
-
 OUTAGE_TYPES = (u'Mau uso',
                 u'Fadiga',
                 u'Eventual',
@@ -156,20 +153,27 @@ class Flight(models.Model):
                                      mantainance=False).order_by('number')
 
     @property
+    def base(self):
+        try:
+            return OperationalBase.objects.filter(since__number__lte=self.number).order_by('-since__number')[0].base
+        except IndexError:
+            return OperationalBase.objects.get(since=None).base
+    
+    @property
     def first_flight(self):
-        if self.origin.icao == OPERATIONAL_BASE:
+        if self.origin == self.base:
             return self
         try:
-            return Flight.objects.filter(number__lt=self.number, origin=Airport.objects.get(icao=OPERATIONAL_BASE)).order_by('-number')[0]
+            return Flight.objects.filter(number__lt=self.number, origin=self.base).order_by('-number')[0]
         except IndexError:
             return self
 
     @property
     def last_flight(self):
-        if self.destiny.icao == OPERATIONAL_BASE:
+        if self.destiny == self.base:
             return self
         try:
-            return Flight.objects.filter(number__gt=self.number, destiny=Airport.objects.get(icao=OPERATIONAL_BASE)).order_by('number')[0]
+            return Flight.objects.filter(number__gt=self.number, destiny=self.base).order_by('number')[0]
         except IndexError:
             return self
 
@@ -231,3 +235,7 @@ class Outage(models.Model):
 
     class Meta:
         verbose_name = u"Pane"
+
+class OperationalBase(models.Model):
+    base = models.ForeignKey(Airport)
+    since = models.ForeignKey(Flight, verbose_name=u"A partir de", null=True)

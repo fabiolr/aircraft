@@ -1,10 +1,12 @@
 from datetime import date
 from expense.models import Person, Flight
-from flight.models import Airport
+from flight.models import Airport, OperationalBase
 
 def fixtures_3_return_flights_in_3_months():
     owner1 = Person.objects.create(name=u'Owner 1', owner=True)
     owner2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+    OperationalBase.objects.create(base=Airport.objects.get_or_create(icao='SBJD')[0])
 
     flight1 = Flight.objects.create(
             origin = Airport.objects.get_or_create(icao="SBJD")[0], 
@@ -89,3 +91,4 @@ def fixtures_3_return_flights_in_3_months():
             end_hobbs = 204.0,
 	    mantainance = True
         )    
+

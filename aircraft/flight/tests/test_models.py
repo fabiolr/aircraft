@@ -5,7 +5,7 @@ from datetime import date
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from flight.models import Flight, Airport, OPERATIONAL_BASE
+from flight.models import Flight, Airport, OperationalBase
 
 from . import dev
 
@@ -16,8 +16,8 @@ class FlightTest(TestCase):
         self.b = Airport.objects.create(icao='DCBA', remote_id=2, latitude=0, longitude=0)
         self.c = Airport.objects.create(icao='AEIO', remote_id=3, latitude=0, longitude=0)
         self.d = Airport.objects.create(icao='AEIU', remote_id=4, latitude=0, longitude=0)
-        Airport.objects.create(icao=OPERATIONAL_BASE, remote_id=5, latitude=0, longitude=0)
-        
+        self.o = Airport.objects.create(icao='SBJD', remote_id=5, latitude=0, longitude=0)
+        OperationalBase.objects.create(base=self.o)
 
     def test_number_is_always_consistently_sequential(self):
         flight1 = Flight.objects.create(start_hobbs=0,

@@ -5,7 +5,7 @@ from datetime import date
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
-from flight.models import Person, Flight, Outage, Airport, OPERATIONAL_BASE
+from flight.models import Person, Flight, Outage, Airport, OperationalBase
 from expense.models import (DirectExpense, VariableExpense, FixedExpense,
                             HourlyMantainance, ScheduleMantainance, EventualMantainance)
 from finance.models import (Interpayment, Expense, Responsibility,
@@ -20,7 +20,9 @@ class TestDirectExpense(TestCase):
         self.a = Airport.objects.create(icao='ABCD', remote_id=1, latitude=0, longitude=0)
         self.b = Airport.objects.create(icao='DCBA', remote_id=2, latitude=0, longitude=0)
         self.c = Airport.objects.create(icao='AEIO', remote_id=3, latitude=0, longitude=0)
-        self.o = Airport.objects.create(icao=OPERATIONAL_BASE, remote_id=5, latitude=0, longitude=0)
+        self.d = Airport.objects.create(icao='AEIU', remote_id=4, latitude=0, longitude=0)
+        self.o = Airport.objects.create(icao='SBJD', remote_id=5, latitude=0, longitude=0)
+        OperationalBase.objects.create(base=self.o)
 
     def test_responsibility_is_shared_proportional_to_pax(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
@@ -111,7 +113,7 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[1].ammount, 600)
 
     
-    def test_fligh_responsibility_is_repeated_until_aircraft_returns_to_base(self):
+    def test_flight_responsibility_is_repeated_until_aircraft_returns_to_base(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
@@ -230,7 +232,76 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[0].ammount, 600)
         self.assertEquals(responsibility[1].ammount, 1000)
         
+    def test_base_can_be_changed(self):
+        owner1 = Person.objects.create(name=u'Owner 1', owner=True)
+        owner2 = Person.objects.create(name=u'Owner 2', owner=True)
 
+        # First, we fly from base to A, then back to base. 
+        # All responsibility from Owner 1
+
+        flight1 = Flight.objects.create(date=date(2011, 11, 12),
+                                        origin=self.o,
+                                        destiny=self.a,
+                                        start_hobbs=100,
+                                        end_hobbs=110,
+                                        cycles=3,
+                                        )
+
+        flight1.pax_set.create(owner=owner1, ammount=5)
+
+        flight2 = Flight.objects.create(date = date(2011, 11, 12),
+                                        origin=self.a,
+                                        destiny=self.o,
+                                        start_hobbs=110,
+                                        end_hobbs=115,
+                                        cycles=2,
+                                        )
+
+        flight2.pax_set.create(owner=owner1, ammount=5)
+                                        
+        # Now, mantainance flight to C, that becomes new base
+
+        flight3 = Flight.objects.create(date=date(2011,11,13),
+                                        origin=self.o,
+                                        destiny=self.c,
+                                        start_hobbs=115,
+                                        end_hobbs=120,
+                                        cycles=1,
+                                        mantainance=True)
+
+        OperationalBase.objects.create(since=flight3, base=self.c)
+
+        # Flight 4 goes from new base with pax from owner 2
+
+        flight4 = Flight.objects.create(date=date(2011,11,14),
+                                        origin=self.c,
+                                        destiny=self.d,
+                                        start_hobbs=120,
+                                        end_hobbs=121,
+                                        cycles=1)
+
+        flight4.pax_set.create(owner=owner2, ammount=1)
+
+        # Flight 5 returns to new base empty.
+        # Owner2 must be fully responsible for all its expenses
+
+        flight5 = Flight.objects.create(date=date(2011,11,15),
+                                        origin=self.d,
+                                        destiny=self.c,
+                                        start_hobbs=121,
+                                        end_hobbs=122,
+                                        cycles=1)
+                                       
+        expense = DirectExpense.objects.create(date=date(2011, 11, 12),
+                                               flight=flight5,
+                                               ammount=1600,
+                                               )
+        set_ammount(expense, 1600)
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(len(responsibility), 1)
+        self.assertEquals(responsibility[0].owner, owner2)
+        self.assertEquals(responsibility[0].ammount, 1600)
 
 
 class VariableExpenseTest(TestCase):
@@ -249,6 +320,7 @@ class VariableExpenseTest(TestCase):
     def setUp(self):
         fixtures_3_return_flights_in_3_months()    
     
+    @dev
     def test_only_considers_given_period(self):
         # Only second flight
         expense = VariableExpense.objects.create(start=date(2011, 11, 1),
@@ -371,6 +443,9 @@ class VariableExpenseTest(TestCase):
 
 
 class FixedExpenseTest(TestCase):
+
+    def setUp(self):
+        OperationalBase.objects.create(base=Airport.objects.create(icao='SBJD'))
 
     def test_expenses_are_shared_equally_no_matter_flights(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
@@ -669,6 +744,9 @@ class ScheduleMantainanceTest(TestCase):
 
 class EventualMantainanceTest(TestCase):
     
+    def setUp(self):
+        OperationalBase.objects.create(base=Airport.objects.create(icao='SBJD'))
+
     def test_if_there_is_responsible_than_he_pays_for_all(self):
         owner1 = Person.objects.create(name=u'Owner 1', owner=True)
         owner2 = Person.objects.create(name=u'Owner 2', owner=True)
@@ -712,6 +790,9 @@ class EventualMantainanceTest(TestCase):
 
 
 class InterpaymentCalculationTest(TestCase):
+
+    def setUp(self):
+        OperationalBase.objects.create(base=Airport.objects.create(icao='SBJD'))
 
     def test_no_interpayments_are_required_when_there_are_no_debts(self):
         o1 = Person.objects.create(name=u'Owner 1', owner=True)
