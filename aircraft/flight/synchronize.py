@@ -3,8 +3,8 @@
 from aircraft.flight.models import Airport
 import urllib2, csv
 
-#resp = urllib2.urlopen('http://www.ourairports.com/data/airports.csv')
-resp = open('/tmp/airports.csv')
+resp = urllib2.urlopen('http://www.ourairports.com/data/airports.csv')
+#resp = open('/tmp/airports.csv')
 
 titles = resp.readline()
 
