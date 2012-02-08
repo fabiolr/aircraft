@@ -33,7 +33,7 @@ class Expense(models.Model):
 
     @property
     def ammount(self):
-        return self.payment_set.aggregate(Sum('ammount'))['ammount__sum']
+        return self.payment_set.aggregate(Sum('ammount'))['ammount__sum'] or 0
     
     def share_by_flights(self):
         if self.flights.count() == 0:
@@ -125,12 +125,19 @@ class Payment(models.Model):
 
 def share_expense_responsibility(sender, **kwargs):
     try:
+        expense = kwargs['instance'].expense
+    except Expense.DoesNotExist:
+        # happens when expense is being deleted and this is triggered by payment's
+        # post_delete signal
+        return
+    try:
         kwargs['instance'].expense.child().share()
     except AttributeError:
         # tests
         pass
     
 models.signals.post_save.connect(share_expense_responsibility, sender=Payment, dispatch_uid="payment")
+models.signals.post_delete.connect(share_expense_responsibility, sender=Payment, dispatch_uid="payment")
 
 class Responsibility(models.Model):
     expense = models.ForeignKey(Expense)

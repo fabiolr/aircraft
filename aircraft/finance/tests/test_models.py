@@ -303,6 +303,34 @@ class TestDirectExpense(TestCase):
         self.assertEquals(responsibility[0].owner, owner2)
         self.assertEquals(responsibility[0].ammount, 1600)
 
+    def test_payment_deletion_will_leave_no_resposibility(self):
+        owner1 = Person.objects.create(name=u'Owner 1', owner=True)
+        owner2 = Person.objects.create(name=u'Owner 2', owner=True)
+
+        flight1 = Flight.objects.create(date=date(2011, 11, 12),
+                                        origin=self.o,
+                                        destiny=self.a,
+                                        start_hobbs=100,
+                                        end_hobbs=110,
+                                        cycles=3,
+                                        )
+
+        flight1.pax_set.create(owner=owner1, ammount=1)
+        flight1.pax_set.create(owner=owner2, ammount=1)
+
+        expense = DirectExpense.objects.create(date=date(2011, 11, 12),
+                                               flight=flight1,
+                                               ammount=200,
+                                               )
+
+        expense.payment_set.create(paid_by=owner1, ammount=200)
+        
+        expense.payment_set.all()[0].delete()
+
+        responsibility = expense.responsibility_set.all()
+        
+        self.assertEquals(responsibility[0].ammount, 0)
+        self.assertEquals(responsibility[1].ammount, 0)
 
 class VariableExpenseTest(TestCase):
 
