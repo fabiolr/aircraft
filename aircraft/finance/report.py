@@ -139,14 +139,22 @@ class Report(object):
 
 class Style():
 
+    def __init__(self):
+        self.date = self.base()
+        self.date.num_format_str = r'DD/MM/YY'
+        self.date.alignment.horz = Alignment.HORZ_CENTER
+
+        self.money = self.base()
+        self.money.num_format_str = '[$R$-416] #,##0.00'
+
+        self.plain = self.base()
+
     def guess(self, value):
-        style = self.base
         if isinstance(value, date):
-            style.num_format_str = r'DD/MM/YY'
-            style.alignment.horz = Alignment.HORZ_CENTER
+            return self.date
         elif isinstance(value, float) or isinstance(value, Formula):
-            style.num_format_str = '[$R$-416] #,##0.00'
-        return style
+            return self.money
+        return self.plain
 
     def width(self, value, step):
         if isinstance(value, date):
@@ -155,7 +163,6 @@ class Style():
             return 4000
         return step * len(value)
 
-    @property
     def base(self):
         style = XFStyle()
         style.borders.top = 1
@@ -172,7 +179,7 @@ class Style():
 
     @property
     def header(self):
-        style = self.base
+        style = self.base()
         style.font.bold = True
         style.alignment.horz = Alignment.HORZ_CENTER
         
