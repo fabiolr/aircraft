@@ -28,14 +28,14 @@ class Report(object):
                 if expense.calculated:
                     self._write_line(self.expenses, (expense.date,
                                                      expense.child().__class__.__name__,
-                                                     expense.category.name,
+                                                     expense.category.name if expense.category else "---",
                                                      unicode(expense.child()),
                                                      payment.paid_by.name,
                                                      payment.ammount))
                 else:
                     self._write_line(self.expenses, (expense.date,
                                                      expense.child().__class__.__name__,
-                                                     expense.category.name,
+                                                     expense.category.name if expense.category else "---",
                                                      unicode(expense.child()),
                                                      payment.paid_by.name,
                                                      '',
@@ -55,7 +55,7 @@ class Report(object):
             for resp in expense.responsibility_set.all():
                 self._write_line(self.responsibilities, (expense.date,
                                                          expense.child().__class__.__name__,
-                                                         expense.category.name,
+                                                         expense.category.name if expense.category else "---",
                                                          unicode(expense.child()),
                                                          resp.owner.name,
                                                          resp.ammount))
